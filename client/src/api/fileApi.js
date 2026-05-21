@@ -82,4 +82,14 @@ export const fileApi = {
 
   /** Get all starred items */
   getStarred: () => api.get('/files/starred'),
+
+  /** Get recent file activity */
+  getRecent: () => api.get('/files/recent'),
+
+  /** Record recent file activity */
+  recordRecent: (path, action) => api.post('/files/recent', { path, action }),
+
+  /** Trash / recycle bin */
+  getTrash: () => api.get('/files/trash'),
+  restoreTrash: (id) => api.post('/files/trash/restore', { id }),
 };

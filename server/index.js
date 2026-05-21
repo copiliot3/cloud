@@ -5,6 +5,7 @@ const drivesRouter = require('./routes/drives');
 const filesRouter = require('./routes/files');
 const uploadRouter = require('./routes/upload');
 const manageRouter = require('./routes/manage');
+const shareRouter = require('./routes/share');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -19,6 +20,7 @@ app.use('/api/drives', drivesRouter);
 app.use('/api/files', filesRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/manage', manageRouter);
+app.use('/api/share', shareRouter);
 
 // --- Serve React production build ---
 const clientBuildPath = path.join(__dirname, '..', 'client', 'dist');

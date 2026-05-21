@@ -13,6 +13,14 @@ const useFileStore = create((set, get) => ({
   starredItems: [],
   starredLoading: false,
 
+  // Recent state
+  recentItems: [],
+  recentLoading: false,
+
+  // Trash state
+  trashItems: [],
+  trashLoading: false,
+
   // History for back/forward
   history: [],
   historyIndex: -1,
@@ -232,6 +240,36 @@ const useFileStore = create((set, get) => ({
       set({ starredItems: data.items || [], starredLoading: false });
     } catch (err) {
       set({ error: err.message, starredLoading: false });
+    }
+  },
+
+  fetchRecent: async () => {
+    set({ recentLoading: true, error: null });
+    try {
+      const data = await fileApi.getRecent();
+      set({ recentItems: data.items || [], recentLoading: false });
+    } catch (err) {
+      set({ error: err.message, recentLoading: false });
+    }
+  },
+
+  fetchTrash: async () => {
+    set({ trashLoading: true, error: null });
+    try {
+      const data = await fileApi.getTrash();
+      set({ trashItems: data.items || [], trashLoading: false });
+    } catch (err) {
+      set({ error: err.message, trashLoading: false });
+    }
+  },
+
+  restoreTrashItem: async (id) => {
+    try {
+      const result = await fileApi.restoreTrash(id);
+      await get().fetchTrash();
+      return result;
+    } catch (err) {
+      return { success: false, error: err.message };
     }
   },
 

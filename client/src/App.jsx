@@ -7,6 +7,8 @@ import DrivesOverview from './components/drives/DrivesOverview';
 import FileListView from './components/files/FileListView';
 import FileGridView from './components/files/FileGridView';
 import StarredView from './components/files/StarredView';
+import RecentView from './components/files/RecentView';
+import TrashView from './components/files/TrashView';
 import Breadcrumb from './components/navigation/Breadcrumb';
 import ContextMenu from './components/actions/ContextMenu';
 import UploadZone from './components/actions/UploadZone';
@@ -17,6 +19,8 @@ import SettingsModal from './components/shared/SettingsModal';
 import PropertiesModal from './components/shared/PropertiesModal';
 import CustomColorModal from './components/shared/CustomColorModal';
 import UploadModal from './components/shared/UploadModal';
+import ShareModal from './components/shared/ShareModal';
+import SharedView from './components/shared/SharedView';
 import useUIStore from './stores/useUIStore';
 import useFileStore from './stores/useFileStore';
 import { VIEW_MODES } from './utils/constants';
@@ -25,6 +29,7 @@ import { fileApi } from './api/fileApi';
 export default function App() {
   const { currentView, viewMode, hideContextMenu, showModal, addToast, accentColor, darkMode } = useUIStore();
   const { selectedItems, currentPath, refresh, selectAll, clearSelection, copyToClipboard, cutToClipboard, paste, navigateTo } = useFileStore();
+  const shareId = new URLSearchParams(window.location.search).get('share');
 
   useEffect(() => {
     document.documentElement.style.setProperty('--primary', accentColor);
@@ -82,8 +87,13 @@ export default function App() {
           count: paths.length,
           onConfirm: async () => {
             try {
-              await fileApi.delete(paths);
-              addToast(`${paths.length} item(s) deleted`);
+              const result = await fileApi.delete(paths);
+              const failed = result.results?.filter(item => !item.success) || [];
+              if (failed.length) {
+                addToast(`Could not delete ${failed.length} item(s): ${failed.map(item => item.error).join(', ')}`, 'error');
+              } else {
+                addToast(`${paths.length} item(s) moved to Trash`);
+              }
               refresh();
             } catch (err) {
               addToast(err.message, 'error');
@@ -133,6 +143,10 @@ export default function App() {
     hideContextMenu();
   };
 
+  if (shareId) {
+    return <SharedView shareId={shareId} />;
+  }
+
   return (
     <div className="flex h-screen bg-[#f5f6fa] dark:bg-[#0b0b0c] text-on-surface dark:text-zinc-100 font-body-md overflow-hidden">
       <Sidebar />
@@ -156,6 +170,10 @@ export default function App() {
                 <DrivesOverview />
               ) : currentView === 'starred' ? (
                 <StarredView />
+              ) : currentView === 'recent' ? (
+                <RecentView />
+              ) : currentView === 'trash' ? (
+                <TrashView />
               ) : (
                 <>
                   <div className="px-8 py-2">
@@ -188,6 +206,7 @@ export default function App() {
       <PropertiesModal />
       <CustomColorModal />
       <UploadModal />
+      <ShareModal />
 
     </div>
   );

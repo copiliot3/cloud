@@ -5,6 +5,8 @@ const fs = require('fs');
 const archiver = require('archiver');
 const { listDirectory, createDirectory, rename, deleteItems, copyItems, moveItems, searchFiles, getItemInfo } = require('../services/fileService');
 const starService = require('../services/starService');
+const recentService = require('../services/recentService');
+const recycleBinService = require('../services/recycleBinService');
 const { streamSearch, quickSearch } = require('../services/searchService');
 
 // GET /api/files/info?path= — Get detailed item info
@@ -15,6 +17,7 @@ router.get('/info', async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'path is required' });
     }
     const result = await getItemInfo(itemPath);
+    await recentService.recordRecent(itemPath, 'viewed');
     res.json({ success: true, ...result });
   } catch (err) {
     next(err);
@@ -29,6 +32,7 @@ router.get('/', async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'path query parameter is required' });
     }
     const result = await listDirectory(dirPath);
+    await recentService.recordRecent(dirPath, 'opened');
     res.json({ success: true, ...result });
   } catch (err) {
     if (err.code === 'ENOENT') err.status = 404;
@@ -102,6 +106,54 @@ router.get('/search', async (req, res, next) => {
     }
     const result = await searchFiles(searchPath, q);
     res.json({ success: true, ...result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/files/recent — Get recently opened/viewed/downloaded items
+router.get('/recent', async (req, res, next) => {
+  try {
+    const items = await recentService.getRecentItems();
+    res.json({ success: true, items });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/files/recent — Record a recent file action
+router.post('/recent', async (req, res, next) => {
+  try {
+    const { path: itemPath, action = 'opened' } = req.body;
+    if (!itemPath) {
+      return res.status(400).json({ success: false, error: 'path is required' });
+    }
+    const item = await recentService.recordRecent(itemPath, action);
+    res.json({ success: true, item });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/files/trash — List recycle bin items
+router.get('/trash', async (req, res, next) => {
+  try {
+    const items = await recycleBinService.listItems();
+    res.json({ success: true, items });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/files/trash/restore — Restore a recycle bin item
+router.post('/trash/restore', async (req, res, next) => {
+  try {
+    const { id } = req.body;
+    if (!id) {
+      return res.status(400).json({ success: false, error: 'id is required' });
+    }
+    const result = await recycleBinService.restoreItem(id);
+    res.json(result);
   } catch (err) {
     next(err);
   }
@@ -190,6 +242,7 @@ router.get('/download', async (req, res, next) => {
     if (paths) {
       // Multi-file download as ZIP
       const pathList = paths.split(',').map(p => p.trim());
+      await Promise.all(pathList.map(p => recentService.recordRecent(p, 'downloaded')));
       res.setHeader('Content-Type', 'application/zip');
       res.setHeader('Content-Disposition', 'attachment; filename="download.zip"');
 
@@ -210,6 +263,7 @@ router.get('/download', async (req, res, next) => {
     } else if (filePath) {
       const resolved = path.resolve(filePath);
       const stat = fs.statSync(resolved);
+      await recentService.recordRecent(resolved, 'downloaded');
 
       if (stat.isDirectory()) {
         // Download folder as ZIP

@@ -57,7 +57,7 @@ export default function ContextMenu() {
   };
 
   const handleDownload = () => {
-    const paths = [...selectedItems];
+    const paths = selectedItems.has(item.path) ? [...selectedItems] : [item.path];
     if (paths.length > 1) {
       window.open(fileApi.getMultiDownloadUrl(paths), '_blank');
     } else {
@@ -102,13 +102,18 @@ export default function ContextMenu() {
   };
 
   const handleDelete = () => {
-    const paths = [...selectedItems];
+    const paths = selectedItems.has(item.path) ? [...selectedItems] : [item.path];
     showModal('delete', {
       count: paths.length,
       onConfirm: async () => {
         try {
-          await fileApi.delete(paths);
-          addToast(`${paths.length} item(s) deleted`);
+          const result = await fileApi.delete(paths);
+          const failed = result.results?.filter(item => !item.success) || [];
+          if (failed.length) {
+            addToast(`Could not delete ${failed.length} item(s): ${failed.map(item => item.error).join(', ')}`, 'error');
+          } else {
+            addToast(`${paths.length} item(s) moved to Trash`);
+          }
           refresh();
         } catch (err) {
           addToast(err.message, 'error');
@@ -145,6 +150,7 @@ export default function ContextMenu() {
         <MenuItem label="Open" onClick={handleOpen} shortcut="Ctrl O" />
         <MenuItem label="Get Info" onClick={() => { showModal('properties', { item }); hideContextMenu(); }} shortcut="Ctrl I" />
         <MenuItem label="Download" onClick={handleDownload} />
+        <MenuItem label="Share" onClick={() => { showModal('share', { item }); hideContextMenu(); }} />
         <MenuItem 
           label={item.isStarred ? '★ Unstar' : '☆ Star'} 
           onClick={async () => {

@@ -6,6 +6,7 @@ import useUIStore from '../../stores/useUIStore';
 import { getFileType } from '../../utils/fileTypes';
 import { formatBytes } from '../../utils/formatBytes';
 import { formatDate } from '../../utils/formatDate';
+import { fileApi } from '../../api/fileApi';
 
 // Category config
 const CATEGORIES = [
@@ -84,6 +85,7 @@ export default function SpotlightSearch() {
 
   // Open result
   const handleOpenResult = useCallback((item) => {
+    fileApi.recordRecent(item.path, 'searched').catch(() => {});
     closeSpotlight();
     if (item.isDirectory) {
       setCurrentView('files');

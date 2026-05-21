@@ -20,6 +20,10 @@ export default function Sidebar() {
       if (activeNav !== 'my-files') setActiveNav('my-files');
     } else if (currentView === 'starred') {
       if (activeNav !== 'starred') setActiveNav('starred');
+    } else if (currentView === 'recent') {
+      if (activeNav !== 'recent') setActiveNav('recent');
+    } else if (currentView === 'trash') {
+      if (activeNav !== 'trash') setActiveNav('trash');
     }
   }, [currentView, currentPath, activeNav, setActiveNav]);
 
@@ -30,6 +34,10 @@ export default function Sidebar() {
       navigateTo('');
     } else if (id === 'starred') {
       setCurrentView('starred');
+    } else if (id === 'recent') {
+      setCurrentView('recent');
+    } else if (id === 'trash') {
+      setCurrentView('trash');
     }
   };
 

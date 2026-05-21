@@ -32,7 +32,7 @@ export default function Modal() {
     }
   }, [modal.visible, modal.type, modal.data]);
 
-  if (!modal.visible || ['properties', 'settings'].includes(modal.type)) return null;
+  if (!modal.visible || ['properties', 'settings', 'share'].includes(modal.type)) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -130,14 +130,14 @@ export default function Modal() {
             </div>
             <p className="text-[14px] text-on-surface-variant dark:text-zinc-400 leading-relaxed px-4">
               Are you sure you want to delete <strong className="text-on-surface dark:text-zinc-200 font-bold">{modal.data?.count || 1} items</strong>?
-              This action will permanently remove them from your disk.
+              They will move to Trash so they can be restored later.
             </p>
             <div className="flex flex-col gap-2 w-full mt-8">
               <button
                 onClick={handleSubmit}
                 className="w-full py-4 rounded-2xl bg-error text-white text-[15px] font-bold shadow-xl transition-all hover:brightness-110 active:scale-95"
               >
-                Delete Items
+                Move to Trash
               </button>
               <button
                 onClick={handleCancel}

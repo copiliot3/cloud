@@ -2,6 +2,7 @@ const fs = require('fs');
 const fsPromises = require('fs').promises;
 const path = require('path');
 const starService = require('./starService');
+const recycleBinService = require('./recycleBinService');
 
 
 // Hidden/system items to filter out
@@ -126,21 +127,14 @@ async function rename(oldPath, newName) {
 }
 
 /**
- * Delete files/folders (permanent delete — no recycle bin).
+ * Move files/folders to the app recycle bin.
  */
 async function deleteItems(paths) {
   const results = [];
   for (const itemPath of paths) {
     try {
-      const normalizedPath = path.resolve(itemPath);
-      const stat = await fsPromises.stat(normalizedPath);
-
-      if (stat.isDirectory()) {
-        await fsPromises.rm(normalizedPath, { recursive: true, force: true });
-      } else {
-        await fsPromises.unlink(normalizedPath);
-      }
-      results.push({ path: normalizedPath, success: true });
+      const result = await recycleBinService.moveToBin(itemPath);
+      results.push({ path: result.originalPath, binPath: result.binPath, id: result.id, success: true });
     } catch (err) {
       results.push({ path: itemPath, success: false, error: err.message });
     }
