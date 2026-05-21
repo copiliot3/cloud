@@ -28,7 +28,7 @@ import { fileApi } from './api/fileApi';
 
 export default function App() {
   const { currentView, viewMode, hideContextMenu, showModal, addToast, accentColor, darkMode } = useUIStore();
-  const { selectedItems, currentPath, refresh, selectAll, clearSelection, copyToClipboard, cutToClipboard, paste, navigateTo } = useFileStore();
+  const { selectedItems, currentPath, refresh, selectAll, clearSelection, copyToClipboard, cutToClipboard, paste, navigateTo, deleteFiles } = useFileStore();
   const shareId = new URLSearchParams(window.location.search).get('share');
 
   useEffect(() => {
@@ -86,20 +86,7 @@ export default function App() {
         const paths = [...selectedItems];
         showModal('delete', {
           count: paths.length,
-          onConfirm: async () => {
-            try {
-              const result = await fileApi.delete(paths);
-              const failed = result.results?.filter(item => !item.success) || [];
-              if (failed.length) {
-                addToast(`Could not delete ${failed.length} item(s): ${failed.map(item => item.error).join(', ')}`, 'error');
-              } else {
-                addToast(`${paths.length} item(s) moved to Recycle Bin`);
-              }
-              refresh();
-            } catch (err) {
-              addToast(err.message, 'error');
-            }
-          },
+          onConfirm: () => deleteFiles(paths),
         });
       }
     } else if (e.key === 'F2') {

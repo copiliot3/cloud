@@ -8,6 +8,7 @@ const starService = require('../services/starService');
 const recentService = require('../services/recentService');
 const recycleBinService = require('../services/recycleBinService');
 const { streamSearch, quickSearch } = require('../services/searchService');
+const backgroundJobService = require('../services/backgroundJobService');
 
 // GET /api/files/info?path= — Get detailed item info
 router.get('/info', async (req, res, next) => {
@@ -133,6 +134,17 @@ router.post('/recent', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+// GET /api/files/background-jobs/status — Get status of background jobs
+router.get('/background-jobs/status', (req, res) => {
+  const { ids } = req.query;
+  if (!ids) {
+    return res.status(400).json({ success: false, error: 'ids parameter is required' });
+  }
+  const idList = ids.split(',').map(id => id.trim());
+  const statuses = backgroundJobService.getJobsStatus(idList);
+  res.json({ success: true, statuses });
 });
 
 // GET /api/files/recycle-bin — List recycle bin items

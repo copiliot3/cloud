@@ -32,9 +32,25 @@ const useUIStore = create((set, get) => ({
   addToast: (message, type = 'success') => {
     const id = Date.now();
     set((s) => ({ toasts: [...s.toasts, { id, message, type }] }));
-    setTimeout(() => {
-      set((s) => ({ toasts: s.toasts.filter(t => t.id !== id) }));
-    }, 4000);
+    if (type !== 'loading') {
+      setTimeout(() => {
+        get().removeToast(id);
+      }, 4000);
+    }
+    return id;
+  },
+  updateToast: (id, message, type) => {
+    set((s) => ({
+      toasts: s.toasts.map((t) => (t.id === id ? { ...t, message, type } : t)),
+    }));
+    if (type !== 'loading') {
+      setTimeout(() => {
+        get().removeToast(id);
+      }, 4000);
+    }
+  },
+  removeToast: (id) => {
+    set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
   },
 
   // Upload state

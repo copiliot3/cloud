@@ -8,7 +8,7 @@ import { fileApi } from '../../api/fileApi';
 
 export default function Topbar() {
   const { toggleSidebar, currentView, showModal, addToast, accentColor } = useUIStore();
-  const { selectedItems, currentPath, copyToClipboard, cutToClipboard, paste, refresh } = useFileStore();
+  const { selectedItems, currentPath, copyToClipboard, cutToClipboard, paste, refresh, deleteFiles } = useFileStore();
   const { query, setQuery, clearSearch, isSearching, isActive } = useSearchStore();
   const hasSelection = selectedItems.size > 0;
   const searchInputRef = useRef(null);
@@ -46,15 +46,7 @@ export default function Topbar() {
     const paths = [...selectedItems];
     showModal('delete', {
       count: paths.length,
-      onConfirm: async () => {
-        try {
-          await fileApi.delete(paths);
-          addToast(`${paths.length} item(s) deleted`);
-          refresh();
-        } catch (err) {
-          addToast(err.message, 'error');
-        }
-      },
+      onConfirm: () => deleteFiles(paths),
     });
   };
 

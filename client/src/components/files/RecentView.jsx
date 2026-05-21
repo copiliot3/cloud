@@ -101,22 +101,24 @@ export default function RecentView() {
             </div>
 
             <div className="flex flex-col mt-1 gap-1">
-              {recentItems.map((item) => {
+              {recentItems.map((item, index) => {
                 const isSelected = selectedItems.has(item.path);
+                const delay = `${Math.min(index, 30) * 18}ms`;
                 return (
                   <div
                     key={item.path}
                     onClick={(e) => handleItemClick(e, item)}
                     onDoubleClick={() => handleOpen(item)}
                     onContextMenu={(e) => handleContextMenu(e, item)}
-                    className={`group grid grid-cols-[auto_1fr_1.4fr_160px_160px_100px] gap-4 px-4 py-2.5 items-center cursor-pointer transition-all duration-200 rounded-xl border ${
+                    className={`group grid grid-cols-[auto_1fr_1.4fr_160px_160px_100px] gap-4 px-4 py-2.5 items-center cursor-pointer transition-all duration-200 rounded-xl border animate-file-appear ${
                       isSelected ? '' : 'border-transparent hover:bg-black/5 dark:hover:bg-white/5'
                     }`}
                     style={isSelected ? {
                       backgroundColor: `${accentColor}1C`,
                       borderColor: `${accentColor}66`,
                       boxShadow: `0 4px 12px ${accentColor}1D`,
-                    } : {}}
+                      animationDelay: delay,
+                    } : { animationDelay: delay }}
                   >
                     <div className="w-8 flex items-center justify-center">
                       <span className="material-symbols-outlined text-[18px] opacity-45">history</span>

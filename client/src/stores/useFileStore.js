@@ -297,8 +297,16 @@ const useFileStore = create((set, get) => ({
     try {
       const result = await fileApi.restoreRecycleBin(id);
       await get().fetchRecycleBin();
+      if (result.job) {
+        get().trackBackgroundJobs([result.job.id], 'Restore', `Restoring "${result.job.params?.name || 'item'}"`);
+      } else {
+        const useUIStoreModule = await import('./useUIStore');
+        useUIStoreModule.default.getState().addToast('Item restored successfully', 'success');
+      }
       return result;
     } catch (err) {
+      const useUIStoreModule = await import('./useUIStore');
+      useUIStoreModule.default.getState().addToast(err.message, 'error');
       return { success: false, error: err.message };
     }
   },
@@ -307,10 +315,103 @@ const useFileStore = create((set, get) => ({
     try {
       const result = await fileApi.deleteRecycleBin(ids);
       await get().fetchRecycleBin();
+      if (result.job) {
+        get().trackBackgroundJobs([result.job.id], 'DeletePermanent', `Permanently deleting ${ids.length} item(s)`);
+      } else {
+        const useUIStoreModule = await import('./useUIStore');
+        useUIStoreModule.default.getState().addToast('Items permanently deleted', 'success');
+      }
       return result;
     } catch (err) {
+      const useUIStoreModule = await import('./useUIStore');
+      useUIStoreModule.default.getState().addToast(err.message, 'error');
       return { success: false, error: err.message };
     }
+  },
+
+  deleteFiles: async (paths) => {
+    try {
+      const response = await fileApi.delete(paths);
+      // Instantly refresh the directory view so renamed items disappear
+      get().refresh();
+
+      const jobs = response.results?.map(r => r.job).filter(Boolean) || [];
+      const jobIds = jobs.map(j => j.id);
+
+      if (jobIds.length > 0) {
+        get().trackBackgroundJobs(jobIds, 'Delete', `Moving ${paths.length} item(s) to Recycle Bin`);
+      } else {
+        const failed = response.results?.filter(item => !item.success) || [];
+        const useUIStoreModule = await import('./useUIStore');
+        const { addToast } = useUIStoreModule.default.getState();
+        if (failed.length) {
+          addToast(`Could not delete ${failed.length} item(s): ${failed.map(item => item.error).join(', ')}`, 'error');
+        } else {
+          addToast(`${paths.length} item(s) moved to Recycle Bin`, 'success');
+        }
+      }
+      return response;
+    } catch (err) {
+      const useUIStoreModule = await import('./useUIStore');
+      useUIStoreModule.default.getState().addToast(err.message, 'error');
+      return { success: false, error: err.message };
+    }
+  },
+
+  trackBackgroundJobs: async (jobIds, type, label) => {
+    const useUIStoreModule = await import('./useUIStore');
+    const useUIStore = useUIStoreModule.default;
+    const { addToast, updateToast } = useUIStore.getState();
+
+    const toastId = addToast(`${label}...`, 'loading');
+
+    const interval = setInterval(async () => {
+      try {
+        const response = await fileApi.getBackgroundJobsStatus(jobIds);
+        const statuses = response.statuses || {};
+        
+        let allCompleted = true;
+        let anyFailed = false;
+        let failureError = '';
+        let totalProgress = 0;
+        let jobCount = 0;
+
+        for (const id of jobIds) {
+          const job = statuses[id];
+          if (job) {
+            jobCount++;
+            totalProgress += job.progress || 0;
+            if (job.status === 'failed') {
+              anyFailed = true;
+              failureError = job.error || 'Operation failed';
+            }
+            if (job.status !== 'completed' && job.status !== 'failed') {
+              allCompleted = false;
+            }
+          } else {
+            allCompleted = false;
+          }
+        }
+
+        const avgProgress = jobCount > 0 ? Math.round(totalProgress / jobCount) : 0;
+
+        if (anyFailed) {
+          clearInterval(interval);
+          updateToast(toastId, `Failed: ${label} (${failureError})`, 'error');
+          get().refresh();
+          get().fetchRecycleBin();
+        } else if (allCompleted) {
+          clearInterval(interval);
+          updateToast(toastId, `Completed: ${label}`, 'success');
+          get().refresh();
+          get().fetchRecycleBin();
+        } else {
+          updateToast(toastId, `${label} (${avgProgress}%)...`, 'loading');
+        }
+      } catch (err) {
+        console.error('Error checking background job status:', err);
+      }
+    }, 1000);
   },
 
   fetchTrash: () => get().fetchRecycleBin(),

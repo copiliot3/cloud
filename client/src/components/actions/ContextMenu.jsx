@@ -5,7 +5,7 @@ import { fileApi } from '../../api/fileApi';
 
 export default function ContextMenu() {
   const { contextMenu, hideContextMenu, showModal, addToast, accentColor } = useUIStore();
-  const { refresh, copyToClipboard, cutToClipboard, paste, selectedItems } = useFileStore();
+  const { refresh, copyToClipboard, cutToClipboard, paste, selectedItems, deleteFiles } = useFileStore();
   const { setCustomFolderColor } = useUIStore();
   const menuRef = useRef(null);
 
@@ -105,20 +105,7 @@ export default function ContextMenu() {
     const paths = selectedItems.has(item.path) ? [...selectedItems] : [item.path];
     showModal('delete', {
       count: paths.length,
-      onConfirm: async () => {
-        try {
-          const result = await fileApi.delete(paths);
-          const failed = result.results?.filter(item => !item.success) || [];
-          if (failed.length) {
-            addToast(`Could not delete ${failed.length} item(s): ${failed.map(item => item.error).join(', ')}`, 'error');
-          } else {
-            addToast(`${paths.length} item(s) moved to Recycle Bin`);
-          }
-          refresh();
-        } catch (err) {
-          addToast(err.message, 'error');
-        }
-      },
+      onConfirm: () => deleteFiles(paths),
     });
     hideContextMenu();
   };

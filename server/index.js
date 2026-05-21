@@ -42,6 +42,13 @@ app.use((err, req, res, next) => {
   });
 });
 
+const { initBackgroundJobs } = require('./services/backgroundJobService');
+initBackgroundJobs().then(() => {
+  console.log('  ⚙️  Background job service initialized and queue processing active.');
+}).catch(err => {
+  console.error('  ❌ Background job service initialization failed:', err);
+});
+
 app.listen(PORT, () => {
   console.log(`\n  ☁️  CloudDrive Lumina server running at http://localhost:${PORT}`);
   console.log(`  📂 API available at http://localhost:${PORT}/api\n`);

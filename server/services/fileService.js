@@ -142,7 +142,7 @@ async function deleteItems(paths) {
   for (const itemPath of paths) {
     try {
       const result = await recycleBinService.moveToBin(itemPath);
-      results.push({ path: result.originalPath, binPath: result.binPath, id: result.id, success: true });
+      results.push({ path: result.originalPath, binPath: result.binPath, id: result.id, success: true, job: result.job });
     } catch (err) {
       results.push({ path: itemPath, success: false, error: err.message });
     }

@@ -4,6 +4,8 @@ const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 
+const backgroundJobService = require('./backgroundJobService');
+
 const RECYCLE_ROOT = path.join(os.homedir(), '.clouddrive-lumina', 'recyclebin');
 const MANIFEST_FILE = path.join(os.homedir(), '.clouddrive-lumina', 'recyclebin.json');
 const SETTINGS_FILE = path.join(os.homedir(), '.clouddrive-lumina', 'recyclebin-settings.json');
@@ -115,21 +117,22 @@ async function moveToBin(itemPath) {
   const id = crypto.randomUUID();
   const binPath = path.join(RECYCLE_ROOT, `${id}-${path.basename(normalizedPath)}`);
 
-  await movePath(normalizedPath, binPath, stats);
+  // Instantly rename locally to a temporary path that starts with $ (so listDirectory filters it out)
+  const tempPath = path.join(path.dirname(normalizedPath), `$deleting-${id}-${path.basename(normalizedPath)}`);
+  await fsPromises.rename(normalizedPath, tempPath);
 
-  const manifest = await readManifest();
-  manifest.unshift({
+  const job = await backgroundJobService.createJob('delete', {
     id,
+    sourcePath: tempPath,
+    destPath: binPath,
     originalPath: normalizedPath,
-    binPath,
     name: path.basename(normalizedPath),
     isDirectory: stats.isDirectory(),
     size: stats.isDirectory() ? null : stats.size,
     deletedAt: new Date().toISOString(),
   });
-  await writeManifest(manifest);
 
-  return { id, originalPath: normalizedPath, binPath };
+  return { success: true, id, originalPath: normalizedPath, binPath, job };
 }
 
 async function restoreItem(id) {
@@ -139,12 +142,27 @@ async function restoreItem(id) {
     throw Object.assign(new Error('Recycle bin item not found'), { status: 404 });
   }
 
-  const stats = await fsPromises.stat(item.binPath);
-  const restorePath = await getUniquePath(item.originalPath);
-  await movePath(item.binPath, restorePath, stats);
-  await writeManifest(manifest.filter(entry => entry.id !== id));
+  // Verify the source still exists
+  try {
+    await fsPromises.access(item.binPath);
+  } catch {
+    await writeManifest(manifest.filter(entry => entry.id !== id));
+    throw Object.assign(
+      new Error(`Source file no longer exists in the recycle bin: "${item.name}"`),
+      { status: 404 }
+    );
+  }
 
-  return { success: true, id, path: restorePath };
+  const restorePath = await getUniquePath(item.originalPath);
+  const job = await backgroundJobService.createJob('restore', {
+    id,
+    binPath: item.binPath,
+    restorePath,
+    isDirectory: item.isDirectory,
+    name: item.name
+  });
+
+  return { success: true, id, path: restorePath, job };
 }
 
 async function deleteBinPath(item) {
@@ -153,33 +171,17 @@ async function deleteBinPath(item) {
 
 async function deleteItems(ids) {
   const manifest = await readManifest();
-  const idSet = new Set(ids);
-  const results = [];
-  const remaining = [];
-
-  for (const item of manifest) {
-    if (!idSet.has(item.id)) {
-      remaining.push(item);
-      continue;
-    }
-
-    try {
-      await deleteBinPath(item);
-      results.push({ id: item.id, name: item.name, success: true });
-    } catch (err) {
-      remaining.push(item);
-      results.push({ id: item.id, name: item.name, success: false, error: err.message });
-    }
+  const foundIds = manifest.filter(item => ids.includes(item.id)).map(item => item.id);
+  
+  if (foundIds.length === 0) {
+    throw Object.assign(new Error('No recycle bin items found for deletion'), { status: 404 });
   }
 
-  for (const id of ids) {
-    if (!results.some(result => result.id === id)) {
-      results.push({ id, success: false, error: 'Recycle bin item not found' });
-    }
-  }
+  const job = await backgroundJobService.createJob('delete_permanent', {
+    ids: foundIds
+  });
 
-  await writeManifest(remaining);
-  return { success: results.every(result => result.success), results, count: results.filter(result => result.success).length };
+  return { success: true, count: foundIds.length, job };
 }
 
 async function purgeExpiredItems() {
@@ -218,12 +220,26 @@ async function purgeExpiredItems() {
 async function listItems() {
   const { settings } = await purgeExpiredItems();
   const manifest = await readManifest();
+  const activeRestoreIds = new Set(
+    backgroundJobService.getActiveJobs()
+      .filter(job => job.type === 'restore' || job.type === 'delete_permanent')
+      .flatMap(job => job.type === 'delete_permanent' ? (job.params.ids || []) : [job.params.id])
+  );
+
   const valid = [];
+  const returnedItems = [];
 
   for (const item of manifest) {
+    if (activeRestoreIds.has(item.id)) {
+      // Keep it in manifest (so it doesn't get pruned during copy) but don't show it to the user
+      valid.push(item);
+      continue;
+    }
+
     try {
       await fsPromises.access(item.binPath);
-      valid.push({
+      valid.push(item);
+      returnedItems.push({
         ...item,
         retentionDays: settings.retentionDays,
         expiresAt: new Date(new Date(item.deletedAt).getTime() + settings.retentionDays * 24 * 60 * 60 * 1000).toISOString(),
@@ -237,7 +253,7 @@ async function listItems() {
     await writeManifest(valid);
   }
 
-  return valid;
+  return returnedItems;
 }
 
 module.exports = {
@@ -249,4 +265,7 @@ module.exports = {
   readSettings,
   writeSettings,
   purgeExpiredItems,
+  deleteBinPath,
+  readManifest,
+  writeManifest,
 };

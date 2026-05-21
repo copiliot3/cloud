@@ -15,7 +15,7 @@ export default function TrashView() {
     restoreRecycleBinItem,
     deleteRecycleBinItems,
   } = useFileStore();
-  const { accentColor, addToast, showModal, hideContextMenu } = useUIStore();
+  const { accentColor, showModal, hideContextMenu } = useUIStore();
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, item: null });
   const menuRef = useRef(null);
@@ -75,16 +75,12 @@ export default function TrashView() {
     return selectedItems;
   };
 
-  const handleRestore = async (items) => {
-    for (const item of items) {
-      const result = await restoreRecycleBinItem(item.id);
-      if (!result.success) {
-        addToast(result.error || `Could not restore "${item.name}"`, 'error');
-        return;
-      }
-    }
-    addToast(`Restored ${items.length} item(s)`);
+  const handleRestore = (items) => {
+    if (items.length === 0) return;
     clearSelection();
+    items.forEach(item => {
+      restoreRecycleBinItem(item.id);
+    });
   };
 
   const handlePermanentDelete = async (items) => {
@@ -93,15 +89,8 @@ export default function TrashView() {
       ? `Permanently delete "${items[0].name}"? This cannot be undone.`
       : `Permanently delete ${items.length} items? This cannot be undone.`;
     if (!window.confirm(message)) return;
-
-    const result = await deleteRecycleBinItems(items.map(item => item.id));
-    const failed = result.results?.filter(item => !item.success) || [];
-    if (failed.length) {
-      addToast(`Could not delete ${failed.length} item(s): ${failed.map(item => item.error).join(', ')}`, 'error');
-    } else {
-      addToast(`Permanently deleted ${items.length} item(s)`);
-      clearSelection();
-    }
+    clearSelection();
+    deleteRecycleBinItems(items.map(item => item.id));
   };
 
   const handleDownload = (items) => {
@@ -212,7 +201,7 @@ export default function TrashView() {
           <button
             onClick={() => handleRestore(selectedItems)}
             disabled={selectedItems.length === 0}
-            className="h-10 px-4 rounded-xl text-white disabled:opacity-40 text-[13px] font-bold transition-all active:scale-95"
+            className="h-10 px-4 rounded-xl text-white disabled:opacity-40 text-[13px] font-bold transition-all active:scale-95 flex items-center gap-2"
             style={{ backgroundColor: accentColor }}
           >
             Restore
@@ -250,8 +239,9 @@ export default function TrashView() {
             </div>
 
             <div className="flex flex-col mt-1 gap-1">
-              {recycleBinItems.map((item) => {
+              {recycleBinItems.map((item, index) => {
                 const isSelected = selectedIds.has(item.id);
+                const delay = `${Math.min(index, 30) * 18}ms`;
                 return (
                   <div
                     key={item.id}
@@ -262,14 +252,15 @@ export default function TrashView() {
                     }}
                     onDoubleClick={() => handleRestore([item])}
                     onContextMenu={(e) => handleContextMenu(e, item)}
-                    className={`group grid grid-cols-[auto_1fr_1.3fr_150px_150px_100px] gap-4 px-4 py-2.5 items-center rounded-xl border cursor-pointer transition-all ${
+                    className={`group grid grid-cols-[auto_1fr_1.3fr_150px_150px_100px] gap-4 px-4 py-2.5 items-center rounded-xl border cursor-pointer transition-all animate-file-appear ${
                       isSelected ? '' : 'border-transparent hover:bg-black/5 dark:hover:bg-white/5'
                     }`}
                     style={isSelected ? {
                       backgroundColor: `${accentColor}1C`,
                       borderColor: `${accentColor}66`,
                       boxShadow: `0 4px 12px ${accentColor}1D`,
-                    } : {}}
+                      animationDelay: delay,
+                    } : { animationDelay: delay }}
                   >
                     <button
                       onClick={(e) => {

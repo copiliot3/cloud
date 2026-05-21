@@ -25,6 +25,9 @@ export const fileApi = {
   /** Move files/folders */
   move: (sources, destination) => api.post('/files/move', { sources, destination }),
 
+  /** Get status of background jobs */
+  getBackgroundJobsStatus: (ids) => api.get(`/files/background-jobs/status?ids=${ids.join(',')}`),
+
   /** Upload files with progress tracking */
   upload: (destination, files, onProgress) => {
     return new Promise((resolve, reject) => {
