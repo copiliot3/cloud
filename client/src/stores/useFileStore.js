@@ -17,7 +17,10 @@ const useFileStore = create((set, get) => ({
   recentItems: [],
   recentLoading: false,
 
-  // Trash state
+  // Recycle Bin state
+  recycleBinItems: [],
+  recycleBinLoading: false,
+  recycleBinSettings: { retentionDays: 30 },
   trashItems: [],
   trashLoading: false,
 
@@ -253,25 +256,65 @@ const useFileStore = create((set, get) => ({
     }
   },
 
-  fetchTrash: async () => {
-    set({ trashLoading: true, error: null });
+  fetchRecycleBin: async () => {
+    set({ recycleBinLoading: true, trashLoading: true, error: null });
     try {
-      const data = await fileApi.getTrash();
-      set({ trashItems: data.items || [], trashLoading: false });
+      const data = await fileApi.getRecycleBin();
+      set({
+        recycleBinItems: data.items || [],
+        trashItems: data.items || [],
+        recycleBinLoading: false,
+        trashLoading: false,
+      });
     } catch (err) {
-      set({ error: err.message, trashLoading: false });
+      set({ error: err.message, recycleBinLoading: false, trashLoading: false });
     }
   },
 
-  restoreTrashItem: async (id) => {
+  fetchRecycleBinSettings: async () => {
     try {
-      const result = await fileApi.restoreTrash(id);
-      await get().fetchTrash();
+      const data = await fileApi.getRecycleBinSettings();
+      set({ recycleBinSettings: data.settings || { retentionDays: 30 } });
+      return data.settings;
+    } catch (err) {
+      set({ error: err.message });
+      return null;
+    }
+  },
+
+  updateRecycleBinSettings: async (retentionDays) => {
+    try {
+      const data = await fileApi.updateRecycleBinSettings(retentionDays);
+      set({ recycleBinSettings: data.settings || { retentionDays } });
+      await get().fetchRecycleBin();
+      return { success: true, settings: data.settings };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  },
+
+  restoreRecycleBinItem: async (id) => {
+    try {
+      const result = await fileApi.restoreRecycleBin(id);
+      await get().fetchRecycleBin();
       return result;
     } catch (err) {
       return { success: false, error: err.message };
     }
   },
+
+  deleteRecycleBinItems: async (ids) => {
+    try {
+      const result = await fileApi.deleteRecycleBin(ids);
+      await get().fetchRecycleBin();
+      return result;
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  },
+
+  fetchTrash: () => get().fetchRecycleBin(),
+  restoreTrashItem: (id) => get().restoreRecycleBinItem(id),
 
   toggleStar: async (item) => {
     try {

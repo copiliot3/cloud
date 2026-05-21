@@ -135,8 +135,8 @@ router.post('/recent', async (req, res, next) => {
   }
 });
 
-// GET /api/files/trash — List recycle bin items
-router.get('/trash', async (req, res, next) => {
+// GET /api/files/recycle-bin — List recycle bin items
+router.get(['/recycle-bin', '/trash'], async (req, res, next) => {
   try {
     const items = await recycleBinService.listItems();
     res.json({ success: true, items });
@@ -145,14 +145,49 @@ router.get('/trash', async (req, res, next) => {
   }
 });
 
-// POST /api/files/trash/restore — Restore a recycle bin item
-router.post('/trash/restore', async (req, res, next) => {
+// GET /api/files/recycle-bin/settings — Get recycle bin settings
+router.get(['/recycle-bin/settings', '/trash/settings'], async (req, res, next) => {
+  try {
+    const settings = await recycleBinService.readSettings();
+    res.json({ success: true, settings });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/files/recycle-bin/settings — Update recycle bin settings
+router.post(['/recycle-bin/settings', '/trash/settings'], async (req, res, next) => {
+  try {
+    const settings = await recycleBinService.writeSettings(req.body || {});
+    await recycleBinService.purgeExpiredItems();
+    res.json({ success: true, settings });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/files/recycle-bin/restore — Restore a recycle bin item
+router.post(['/recycle-bin/restore', '/trash/restore'], async (req, res, next) => {
   try {
     const { id } = req.body;
     if (!id) {
       return res.status(400).json({ success: false, error: 'id is required' });
     }
     const result = await recycleBinService.restoreItem(id);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/files/recycle-bin/delete — Permanently delete recycle bin items
+router.post(['/recycle-bin/delete', '/trash/delete'], async (req, res, next) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, error: 'ids array is required' });
+    }
+    const result = await recycleBinService.deleteItems(ids);
     res.json(result);
   } catch (err) {
     next(err);

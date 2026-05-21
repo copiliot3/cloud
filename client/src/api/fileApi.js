@@ -89,7 +89,14 @@ export const fileApi = {
   /** Record recent file activity */
   recordRecent: (path, action) => api.post('/files/recent', { path, action }),
 
-  /** Trash / recycle bin */
-  getTrash: () => api.get('/files/trash'),
-  restoreTrash: (id) => api.post('/files/trash/restore', { id }),
+  /** Recycle Bin */
+  getRecycleBin: () => api.get('/files/recycle-bin'),
+  restoreRecycleBin: (id) => api.post('/files/recycle-bin/restore', { id }),
+  deleteRecycleBin: (ids) => api.post('/files/recycle-bin/delete', { ids }),
+  getRecycleBinSettings: () => api.get('/files/recycle-bin/settings'),
+  updateRecycleBinSettings: (retentionDays) => api.post('/files/recycle-bin/settings', { retentionDays }),
+
+  // Backwards-compatible aliases for older UI code.
+  getTrash: () => api.get('/files/recycle-bin'),
+  restoreTrash: (id) => api.post('/files/recycle-bin/restore', { id }),
 };

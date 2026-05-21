@@ -85,7 +85,7 @@ export default function Sidebar() {
         <NavLink id="shared" label="Shared" icon="group" />
         <NavLink id="recent" label="Recent" icon="schedule" />
         <NavLink id="starred" label="Starred" icon="star" />
-        <NavLink id="trash" label="Trash" icon="delete" />
+        <NavLink id="trash" label="Recycle Bin" icon="delete" />
       </nav>
 
       {/* Drives Tree View */}

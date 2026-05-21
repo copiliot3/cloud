@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import useUIStore from '../../stores/useUIStore';
+import useFileStore from '../../stores/useFileStore';
 
 const CATEGORIES = [
   { id: 'appearance', label: 'Appearance', icon: 'palette' },
@@ -7,6 +8,7 @@ const CATEGORIES = [
   { id: 'accessibility', label: 'Accessibility', icon: 'accessibility' },
   { id: 'privacy', label: 'Privacy & Security', icon: 'lock' },
   { id: 'storage', label: 'Storage', icon: 'database' },
+  { id: 'recycleBin', label: 'Recycle Bin', icon: 'delete' },
 ];
 
 const ACCENT_COLORS = [
@@ -37,10 +39,17 @@ export default function SettingsModal() {
     enableAnimations, setEnableAnimations,
     toggleCustomColorModal,
     customAccentColors,
-    darkMode, setDarkMode
+    darkMode, setDarkMode,
+    addToast
   } = useUIStore();
+  const {
+    recycleBinSettings,
+    fetchRecycleBinSettings,
+    updateRecycleBinSettings,
+  } = useFileStore();
 
   const [activeTab, setActiveTab] = useState('appearance');
+  const [retentionDays, setRetentionDays] = useState(recycleBinSettings.retentionDays || 30);
   const scrollRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -61,6 +70,27 @@ export default function SettingsModal() {
   };
 
   const stopDragging = () => setIsDragging(false);
+
+  useEffect(() => {
+    if (modal.visible && modal.type === 'settings') {
+      fetchRecycleBinSettings();
+    }
+  }, [modal.visible, modal.type, fetchRecycleBinSettings]);
+
+  useEffect(() => {
+    setRetentionDays(recycleBinSettings.retentionDays || 30);
+  }, [recycleBinSettings.retentionDays]);
+
+  const saveRetentionDays = async (days) => {
+    const nextDays = Math.max(1, Math.min(365, Math.floor(Number(days) || 30)));
+    setRetentionDays(nextDays);
+    const result = await updateRecycleBinSettings(nextDays);
+    if (result.success) {
+      addToast(`Recycle Bin will auto-delete after ${nextDays} day(s)`);
+    } else {
+      addToast(result.error || 'Could not update Recycle Bin settings', 'error');
+    }
+  };
 
   if (!modal.visible || modal.type !== 'settings') return null;
 
@@ -360,10 +390,78 @@ export default function SettingsModal() {
             )}
 
             {activeTab !== 'appearance' && (
+              activeTab === 'recycleBin' ? (
+                <div className="flex flex-col gap-8">
+                  <section>
+                    <h3 className="text-[12px] font-bold text-black/30 dark:text-zinc-500 uppercase tracking-widest mb-4 px-2">Automatic Cleanup</h3>
+                    <div className="bg-white/60 dark:bg-zinc-800/40 rounded-[24px] border border-black/5 dark:border-zinc-800/80 shadow-sm overflow-hidden">
+                      <div className="p-5 flex items-center justify-between gap-6 border-b border-black/5 dark:border-zinc-800/80">
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${accentColor}18`, color: accentColor }}>
+                            <span className="material-symbols-outlined text-[28px]">auto_delete</span>
+                          </div>
+                          <div className="min-w-0">
+                            <span className="text-[13px] font-semibold text-black/80 dark:text-zinc-200">Delete items after</span>
+                            <span className="block text-[11px] text-black/40 dark:text-zinc-500 mt-0.5">
+                              Items older than this are permanently removed when Recycle Bin refreshes.
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <input
+                            type="number"
+                            min="1"
+                            max="365"
+                            value={retentionDays}
+                            onChange={(e) => setRetentionDays(e.target.value)}
+                            onBlur={() => saveRetentionDays(retentionDays)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') e.currentTarget.blur();
+                            }}
+                            className="w-20 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-center text-[13px] font-bold outline-none focus:ring-4"
+                            style={{ '--tw-ring-color': `${accentColor}33`, borderColor: `${accentColor}4D` }}
+                          />
+                          <span className="text-[12px] font-semibold text-black/50 dark:text-zinc-400">days</span>
+                        </div>
+                      </div>
+
+                      <div className="p-5">
+                        <div className="grid grid-cols-4 gap-2">
+                          {[7, 14, 30, 60].map((days) => (
+                            <button
+                              key={days}
+                              onClick={() => saveRetentionDays(days)}
+                              className={`py-3 rounded-xl text-[12px] font-bold transition-all ${
+                                Number(retentionDays) === days
+                                  ? 'text-white shadow-md'
+                                  : 'bg-black/5 dark:bg-white/5 text-black/60 dark:text-zinc-300 hover:bg-black/10 dark:hover:bg-white/10'
+                              }`}
+                              style={Number(retentionDays) === days ? { backgroundColor: accentColor } : {}}
+                            >
+                              {days} days
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section>
+                    <h3 className="text-[12px] font-bold text-black/30 dark:text-zinc-500 uppercase tracking-widest mb-4 px-2">Current Policy</h3>
+                    <div className="bg-white/60 dark:bg-zinc-800/40 rounded-[24px] border border-black/5 dark:border-zinc-800/80 p-5 shadow-sm flex items-center gap-4">
+                      <span className="material-symbols-outlined text-[28px]" style={{ color: accentColor }}>schedule</span>
+                      <p className="text-[13px] text-black/65 dark:text-zinc-300 leading-relaxed">
+                        By default, deleted files stay in Recycle Bin for 30 days. With the current setting, an item deleted today will be permanently removed after day {retentionDays || 30}.
+                      </p>
+                    </div>
+                  </section>
+                </div>
+              ) : (
               <div className="flex flex-col items-center justify-center h-[400px] text-black/10 dark:text-white/10">
                 <span className="material-symbols-outlined text-[64px] mb-4">design_services</span>
                 <p className="text-[14px] font-bold tracking-tight dark:text-zinc-600">Designing this section</p>
               </div>
+              )
             )}
           </div>
         </div>

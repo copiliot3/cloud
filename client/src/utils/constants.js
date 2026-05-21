@@ -19,7 +19,7 @@ export const NAV_ITEMS = [
   { id: 'my-files', label: 'My Files', icon: 'folder_open', filledIcon: true },
   { id: 'recent', label: 'Recent', icon: 'schedule' },
   { id: 'starred', label: 'Starred', icon: 'star' },
-  { id: 'trash', label: 'Trash', icon: 'delete' },
+  { id: 'trash', label: 'Recycle Bin', icon: 'delete' },
 ];
 
 export const REFRESH_INTERVAL = 30000; // 30 seconds

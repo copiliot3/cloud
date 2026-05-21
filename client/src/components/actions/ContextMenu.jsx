@@ -112,7 +112,7 @@ export default function ContextMenu() {
           if (failed.length) {
             addToast(`Could not delete ${failed.length} item(s): ${failed.map(item => item.error).join(', ')}`, 'error');
           } else {
-            addToast(`${paths.length} item(s) moved to Trash`);
+            addToast(`${paths.length} item(s) moved to Recycle Bin`);
           }
           refresh();
         } catch (err) {

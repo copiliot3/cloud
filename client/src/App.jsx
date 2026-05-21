@@ -62,6 +62,7 @@ export default function App() {
 
   const handleKeyDown = useCallback((e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (currentView === 'trash') return;
     const ctrl = e.ctrlKey || e.metaKey;
     if (ctrl && e.key === 'a') {
       e.preventDefault();
@@ -92,7 +93,7 @@ export default function App() {
               if (failed.length) {
                 addToast(`Could not delete ${failed.length} item(s): ${failed.map(item => item.error).join(', ')}`, 'error');
               } else {
-                addToast(`${paths.length} item(s) moved to Trash`);
+                addToast(`${paths.length} item(s) moved to Recycle Bin`);
               }
               refresh();
             } catch (err) {
@@ -131,7 +132,7 @@ export default function App() {
         if (item?.isDirectory) navigateTo(item.path);
       }
     }
-  }, [selectedItems, selectAll, copyToClipboard, cutToClipboard, paste, clearSelection, hideContextMenu, showModal, addToast, refresh, navigateTo]);
+  }, [currentView, selectedItems, selectAll, copyToClipboard, cutToClipboard, paste, clearSelection, hideContextMenu, showModal, addToast, refresh, navigateTo]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);

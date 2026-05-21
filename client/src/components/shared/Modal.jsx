@@ -78,7 +78,7 @@ export default function Modal() {
           <h3 className="text-[17px] font-bold text-on-surface dark:text-zinc-200">
             {modal.type === 'rename' && 'Rename Item'}
             {modal.type === 'newFolder' && 'New Folder'}
-            {modal.type === 'delete' && 'Move to Trash?'}
+            {modal.type === 'delete' && 'Move to Recycle Bin?'}
             {modal.type === 'confirm' && (modal.data?.title || 'Confirm')}
           </h3>
           {modal.type === 'newFolder' && (
@@ -130,14 +130,14 @@ export default function Modal() {
             </div>
             <p className="text-[14px] text-on-surface-variant dark:text-zinc-400 leading-relaxed px-4">
               Are you sure you want to delete <strong className="text-on-surface dark:text-zinc-200 font-bold">{modal.data?.count || 1} items</strong>?
-              They will move to Trash so they can be restored later.
+              They will move to Recycle Bin so they can be restored later.
             </p>
             <div className="flex flex-col gap-2 w-full mt-8">
               <button
                 onClick={handleSubmit}
                 className="w-full py-4 rounded-2xl bg-error text-white text-[15px] font-bold shadow-xl transition-all hover:brightness-110 active:scale-95"
               >
-                Move to Trash
+                Move to Recycle Bin
               </button>
               <button
                 onClick={handleCancel}
