@@ -1,0 +1,15 @@
+{
+  "name": "clouddrive-manager",
+  "version": "1.0.0",
+  "description": "Premium Light macOS Server Manager for CloudDrive Lumina",
+  "main": "main.js",
+  "author": "CloudDrive Team",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-packager . CloudDriveLuminaManager --platform=win32 --arch=x64 --out=dist --overwrite"
+  },
+  "devDependencies": {
+    "electron": "^30.0.9",
+    "electron-packager": "^17.1.2"
+  }
+}

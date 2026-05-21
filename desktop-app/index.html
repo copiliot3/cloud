@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CloudDrive Lumina — Server Manager</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #f3f4f6;
+      --card-bg: rgba(255, 255, 255, 0.45);
+      --card-border: rgba(0, 0, 0, 0.06);
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --accent: 250, 80%, 60%; /* Default Purple-Blue */
+      --accent-color: hsl(var(--accent));
+      --success: 142, 70%, 45%;
+      --success-color: hsl(var(--success));
+      --error: 350, 80%, 55%;
+      --error-color: hsl(var(--error));
+      --font-family: 'Outfit', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-family);
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Soft Background Orbs */
+    .bg-orbs {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(140px);
+      opacity: 0.35;
+      animation: drift 25s infinite alternate ease-in-out;
+    }
+
+    .orb-1 {
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, var(--accent-color) 0%, rgba(255,255,255,0) 70%);
+      top: -100px;
+      right: -100px;
+    }
+
+    .orb-2 {
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(147, 51, 234, 0.4) 0%, rgba(255,255,255,0) 70%);
+      bottom: -150px;
+      left: -100px;
+      animation-delay: -5s;
+    }
+
+    @keyframes drift {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(60px, 40px) scale(1.08); }
+    }
+
+    /* Window Control Area (Frameless) */
+    .titlebar {
+      height: 44px;
+      background: rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(10px);
+      -webkit-app-region: drag;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+      z-index: 10;
+      position: relative;
+    }
+
+    .titlebar-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* Window Controls (Top-Right) */
+    .window-controls {
+      position: absolute;
+      right: 12px;
+      top: 0;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      -webkit-app-region: no-drag;
+      z-index: 20;
+    }
+
+    .win-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.2s ease;
+    }
+
+    .win-btn:hover {
+      background: rgba(0, 0, 0, 0.05);
+      color: var(--text-main);
+    }
+
+    .win-btn-close:hover {
+      background: #ef4444 !important;
+      color: #ffffff !important;
+    }
+
+    /* Main Container */
+    .app-container {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      z-index: 1;
+      position: relative;
+      height: calc(100vh - 44px);
+    }
+
+    /* Sidebar - Premium iOS styled glass navigation */
+    .sidebar {
+      background: rgba(255, 255, 255, 0.35);
+      backdrop-filter: blur(40px);
+      border-right: 1px solid var(--card-border);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent-color) 0%, rgba(147, 51, 234, 0.8) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: bold;
+      font-size: 16px;
+      box-shadow: 0 4px 12px rgba(var(--accent), 0.15);
+    }
+
+    .logo-text {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      color: var(--text-main);
+    }
+
+    .menu-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .menu-item:hover {
+      background: rgba(0, 0, 0, 0.03);
+      color: var(--text-main);
+    }
+
+    .menu-item.active {
+      background: rgba(255, 255, 255, 0.7);
+      color: var(--accent-color);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+      border-left: 3px solid var(--accent-color);
+      padding-left: 13px;
+    }
+
+    .nav-icon {
+      stroke: var(--text-muted);
+      transition: stroke 0.3s ease;
+    }
+
+    .menu-item.active .nav-icon {
+      stroke: var(--accent-color);
+    }
+
+    /* Accent Customizer */
+    .theme-section {
+      margin-top: auto;
+      padding-top: 15px;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .theme-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    .accent-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .accent-dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.2s ease;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    .accent-dot:hover {
+      transform: scale(1.15);
+    }
+
+    .accent-dot.active {
+      border-color: var(--text-main);
+      transform: scale(1.08);
+    }
+
+    /* Main Dashboard View */
+    .main-view {
+      padding: 30px;
+      overflow-y: auto;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+    }
+
+    .view-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .view-title {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--text-main);
+    }
+
+    .view-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      font-weight: 500;
+    }
+
+    .btn-refresh {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      font-size: 13px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+
+    .btn-refresh:hover {
+      background: rgba(255, 255, 255, 0.8);
+      border-color: rgba(0, 0, 0, 0.12);
+      transform: translateY(-1px);
+    }
+
+    /* Grid Layouts */
+    .system-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+    }
+
+    /* iOS Glass Card */
+    .glass-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+      transition: all 0.3s ease;
+    }
+
+    .glass-card:hover {
+      border-color: rgba(0, 0, 0, 0.12);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.05);
+    }
+
+    .stat-header {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text-main);
+    }
+
+    /* Progress bar */
+    .progress-bar-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(0, 0, 0, 0.04);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-color) 0%, rgba(147, 51, 234, 0.8) 100%);
+      border-radius: 3px;
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Process Table Container */
+    .process-section {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .process-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .process-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+      transition: all 0.3s ease;
+    }
+
+    .process-card:hover {
+      background: rgba(255, 255, 255, 0.75);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+      border-color: rgba(0, 0, 0, 0.12);
+    }
+
+    .process-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .process-badge {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #fff;
+      font-size: 14px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+    }
+
+    .badge-server {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    }
+
+    .badge-client {
+      background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+    }
+
+    .process-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .process-name {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--text-main);
+    }
+
+    .process-status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .status-online {
+      background-color: var(--success-color);
+      box-shadow: 0 0 6px var(--success-color);
+    }
+
+    .status-errored, .status-stopped {
+      background-color: var(--error-color);
+      box-shadow: 0 0 6px var(--error-color);
+    }
+
+    .process-stats {
+      display: flex;
+      gap: 25px;
+      font-size: 13px;
+    }
+
+    .stat-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .stat-box-label {
+      color: var(--text-muted);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .stat-box-val {
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .process-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-action {
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.5);
+      color: var(--text-main);
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.02);
+    }
+
+    .btn-action:hover {
+      background: rgba(255, 255, 255, 0.95);
+      border-color: rgba(0, 0, 0, 0.15);
+      transform: scale(1.05);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    .btn-action.btn-stop:hover {
+      color: var(--error-color);
+      border-color: rgba(239, 68, 68, 0.25);
+    }
+
+    .btn-action.btn-start:hover {
+      color: var(--success-color);
+      border-color: rgba(16, 185, 129, 0.25);
+    }
+
+    /* Logs View Console - Light Developer Terminal */
+    .logs-console {
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      height: 220px;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 12px;
+      overflow-y: auto;
+      color: #0f172a;
+      white-space: pre-wrap;
+      word-break: break-all;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.03);
+    }
+
+    /* Premium Overlay Popups / Modals */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.65);
+      backdrop-filter: blur(15px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 20px;
+      padding: 30px;
+      width: 380px;
+      text-align: center;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
+      transform: scale(0.9);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: scale(1);
+    }
+
+    .modal-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--error-color);
+      margin: 0 auto 16px;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text-main);
+    }
+
+    .modal-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+      font-weight: 500;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-modal {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+
+    .btn-modal-cancel {
+      background: rgba(0, 0, 0, 0.03);
+      border-color: var(--card-border);
+      color: var(--text-main);
+    }
+
+    .btn-modal-cancel:hover {
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    .btn-modal-confirm {
+      background: var(--error-color);
+      color: #fff;
+      box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2);
+    }
+
+    .btn-modal-confirm:hover {
+      background: hsl(350, 80%, 48%);
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.08);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 0, 0, 0.15);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Orbs -->
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+  </div>
+
+  <!-- Custom Titlebar with Window Controls -->
+  <div class="titlebar">
+    <div class="titlebar-title">CLOUDDRIVE LUMINA — SERVER MANAGER</div>
+    <div class="window-controls">
+      <!-- Minimize -->
+      <button class="win-btn" onclick="minimizeWindow()" title="Minimize">
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      </button>
+      <!-- Maximize -->
+      <button class="win-btn" onclick="maximizeWindow()" title="Maximize/Restore">
+        <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect></svg>
+      </button>
+      <!-- Close -->
+      <button class="win-btn win-btn-close" onclick="closeWindow()" title="Close" style="font-weight: bold;">
+        <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- App Body -->
+  <div class="app-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="logo-container">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        </div>
+        <div class="logo-text">Lumina Server</div>
+      </div>
+
+      <ul class="menu-list">
+        <li class="menu-item active">
+          <svg class="nav-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 10px; vertical-align: middle;"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+          <span style="vertical-align: middle;">Dashboard</span>
+        </li>
+      </ul>
+
+      <!-- Theme Customizer Section -->
+      <div class="theme-section">
+        <div class="theme-title">Accent Theme</div>
+        <div class="accent-row">
+          <div class="accent-dot active" style="background-color: #6366f1;" onclick="setAccent('250, 80%, 60%', this)"></div>
+          <div class="accent-dot" style="background-color: #ec4899;" onclick="setAccent('330, 85%, 60%', this)"></div>
+          <div class="accent-dot" style="background-color: #10b981;" onclick="setAccent('150, 80%, 45%', this)"></div>
+          <div class="accent-dot" style="background-color: #eab308;" onclick="setAccent('45, 90%, 50%', this)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-view">
+      <!-- Header -->
+      <div class="view-header">
+        <div>
+          <h2 class="view-title">Server Overview</h2>
+          <p class="view-subtitle" id="status-time">Updating real-time stats...</p>
+        </div>
+        <button class="btn-refresh" onclick="refreshAll()">
+          <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+          <span style="vertical-align: middle;">Quick Refresh</span>
+        </button>
+      </div>
+
+      <!-- System Quick Stats -->
+      <div class="system-grid">
+        <!-- CPU Card -->
+        <div class="glass-card">
+          <div class="stat-header">
+            <span>System CPU Load</span>
+            <span>Usage</span>
+          </div>
+          <div class="stat-value" id="cpu-stat">0%</div>
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="cpu-bar" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- RAM Card -->
+        <div class="glass-card">
+          <div class="stat-header">
+            <span>Memory Usage</span>
+            <span id="ram-used">0.0 GB</span>
+          </div>
+          <div class="stat-value" id="ram-percent">0%</div>
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="ram-bar" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Platform Card -->
+        <div class="glass-card">
+          <div class="stat-header">
+            <span>OS Host Platform</span>
+            <span>Core Count</span>
+          </div>
+          <div class="stat-value" id="platform-stat">--</div>
+          <p class="view-subtitle" id="cpu-cores-stat" style="margin-top: 10px;">-- Cores Active</p>
+        </div>
+      </div>
+
+      <!-- Process Manager Section -->
+      <div class="process-section">
+        <h3 class="section-title">Active PM2 Services</h3>
+        <div class="process-list" id="pm2-list">
+          <!-- Process Cards generated dynamically -->
+        </div>
+      </div>
+
+      <!-- Log Terminal Console -->
+      <div class="process-section">
+        <h3 class="section-title" id="logs-title">Service Terminal Output</h3>
+        <div class="logs-console" id="log-screen">Waiting for processes to load...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Popup Confirmation Modal -->
+  <div class="modal-overlay" id="confirm-modal">
+    <div class="modal-content">
+      <div class="modal-icon">
+        <svg viewBox="0 0 24 24" width="36" height="36" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+      </div>
+      <h4 class="modal-title" id="modal-heading">Confirm Action</h4>
+      <p class="modal-desc" id="modal-text">Are you sure you want to proceed with this operation?</p>
+      <div class="modal-buttons">
+        <button class="btn-modal btn-modal-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-modal btn-modal-confirm" id="modal-confirm-btn" onclick="executeConfirmed()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const SERVER_URL = 'http://localhost:3001';
+    let currentModalAction = null;
+    let currentModalTarget = null;
+    let selectedProcessLogs = 'clouddrive-server';
+
+    // Window controls functions
+    function minimizeWindow() {
+      ipcRenderer.send('minimize-window');
+    }
+
+    function maximizeWindow() {
+      ipcRenderer.send('maximize-window');
+    }
+
+    function closeWindow() {
+      ipcRenderer.send('close-window');
+    }
+
+    function setAccent(colorStr, dotEl) {
+      document.documentElement.style.setProperty('--accent', colorStr);
+      document.querySelectorAll('.accent-dot').forEach(el => el.classList.remove('active'));
+      dotEl.classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('confirm-modal').classList.remove('active');
+      currentModalAction = null;
+      currentModalTarget = null;
+    }
+
+    function confirmAction(action, processName) {
+      currentModalAction = action;
+      currentModalTarget = processName;
+      
+      const heading = document.getElementById('modal-heading');
+      const text = document.getElementById('modal-text');
+      const confirmBtn = document.getElementById('modal-confirm-btn');
+
+      if (action === 'stop') {
+        heading.innerText = 'Stop Process';
+        text.innerText = `Are you sure you want to stop '${processName}'? The service will be temporarily unavailable.`;
+        confirmBtn.style.backgroundColor = 'hsl(350, 80%, 55%)';
+      } else {
+        heading.innerText = 'Restart Process';
+        text.innerText = `Are you sure you want to restart '${processName}'?`;
+        confirmBtn.style.backgroundColor = 'hsl(250, 80%, 60%)';
+      }
+
+      document.getElementById('confirm-modal').classList.add('active');
+    }
+
+    async function executeConfirmed() {
+      if (!currentModalAction || !currentModalTarget) return;
+      closeModal();
+      
+      try {
+        const response = await fetch(`${SERVER_URL}/api/manage/action`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: currentModalAction, name: currentModalTarget })
+        });
+        const data = await response.json();
+        if (data.success) {
+          refreshAll();
+        } else {
+          alert('Action failed: ' + data.error);
+        }
+      } catch (err) {
+        alert('Server unreachable. Ensure the backend Express app is running.');
+      }
+    }
+
+    async function fetchSystemStats() {
+      try {
+        const response = await fetch(`${SERVER_URL}/api/manage/system`);
+        const data = await response.json();
+        if (data.success) {
+          const s = data.system;
+          document.getElementById('platform-stat').innerText = s.platform.toUpperCase();
+          document.getElementById('cpu-cores-stat').innerText = `${s.cpuCount} Active Cores`;
+          
+          document.getElementById('ram-used').innerText = `${s.memory.used} / ${s.memory.total}`;
+          document.getElementById('ram-percent').innerText = s.memory.percent;
+          document.getElementById('ram-bar').style.width = s.memory.percent;
+        }
+      } catch (err) {
+        console.error('Failed to fetch system stats', err);
+      }
+    }
+
+    async function fetchProcessList() {
+      try {
+        const response = await fetch(`${SERVER_URL}/api/manage/status`);
+        const data = await response.json();
+        if (data.success) {
+          const listContainer = document.getElementById('pm2-list');
+          listContainer.innerHTML = '';
+
+          let totalCpu = 0;
+
+          data.processes.forEach(p => {
+            totalCpu += p.cpu;
+            const isOnline = p.status === 'online';
+            const badgeLetter = p.name.includes('server') ? 'S' : 'C';
+            const badgeClass = p.name.includes('server') ? 'badge-server' : 'badge-client';
+            
+            const card = document.createElement('div');
+            card.className = 'process-card';
+            card.innerHTML = `
+              <div class="process-info" style="cursor: pointer;" onclick="loadLogs('${p.name}')">
+                <div class="process-badge ${badgeClass}">${badgeLetter}</div>
+                <div class="process-meta">
+                  <div class="process-name">${p.name}</div>
+                  <div class="process-status-row">
+                    <div class="status-dot status-${p.status}"></div>
+                    <span>${p.status}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="process-stats">
+                <div class="stat-box">
+                  <span class="stat-box-label">CPU</span>
+                  <span class="stat-box-val">${p.cpu}%</span>
+                </div>
+                <div class="stat-box">
+                  <span class="stat-box-label">Memory</span>
+                  <span class="stat-box-val">${p.memory}</span>
+                </div>
+                <div class="stat-box">
+                  <span class="stat-box-label">Restarts</span>
+                  <span class="stat-box-val">${p.restarts}</span>
+                </div>
+              </div>
+              <div class="process-actions">
+                <button class="btn-action" title="Restart Process" onclick="confirmAction('restart', '${p.name}')">
+                  <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+                </button>
+                ${isOnline 
+                  ? `<button class="btn-action btn-stop" title="Stop Process" onclick="confirmAction('stop', '${p.name}')">
+                      <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect></svg>
+                     </button>`
+                  : `<button class="btn-action btn-start" title="Start Process" style="color:var(--success-color);" onclick="executeDirect('start', '${p.name}')">
+                      <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.5" fill="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                     </button>`
+                }
+              </div>
+            `;
+            listContainer.appendChild(card);
+          });
+
+          // Set system CPU simulated aggregate
+          document.getElementById('cpu-stat').innerText = `${totalCpu}%`;
+          document.getElementById('cpu-bar').style.width = `${totalCpu}%`;
+
+          document.getElementById('status-time').innerText = `Last updated: ${new Date().toLocaleTimeString()}`;
+        }
+      } catch (err) {
+        document.getElementById('status-time').innerText = 'Backend connection error!';
+      }
+    }
+
+    async function executeDirect(action, name) {
+      try {
+        const response = await fetch(`${SERVER_URL}/api/manage/action`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, name })
+        });
+        const data = await response.json();
+        if (data.success) refreshAll();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadLogs(processName) {
+      selectedProcessLogs = processName;
+      document.getElementById('logs-title').innerText = `Service Terminal Output (${processName})`;
+      try {
+        const response = await fetch(`${SERVER_URL}/api/manage/logs/${processName}`);
+        const data = await response.json();
+        if (data.success) {
+          document.getElementById('log-screen').innerText = data.logs || 'No log output captured yet.';
+        }
+      } catch (err) {
+        document.getElementById('log-screen').innerText = 'Error loading logs from server.';
+      }
+    }
+
+    function refreshAll() {
+      fetchSystemStats();
+      fetchProcessList();
+      loadLogs(selectedProcessLogs);
+    }
+
+    // Auto-refresh stats every 4 seconds
+    setInterval(refreshAll, 4000);
+
+    // Initial load
+    window.onload = refreshAll;
+  </script>
+</body>
+</html>

@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+
+<html lang="en" style=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CloudDrive - Explorer View</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed-dim": "#b5c4ff",
+                    "on-primary-fixed-variant": "#153ea3",
+                    "outline": "#747684",
+                    "primary": "#002068",
+                    "inverse-on-surface": "#eff1f3",
+                    "tertiary": "#1b2931",
+                    "surface-bright": "#f7f9fb",
+                    "surface-container-lowest": "#ffffff",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed": "#001e30",
+                    "background": "#f7f9fb",
+                    "primary-container": "#003399",
+                    "surface-container": "#eceef0",
+                    "on-primary": "#ffffff",
+                    "surface-tint": "#3557bc",
+                    "outline-variant": "#c4c5d5",
+                    "secondary-fixed-dim": "#93cdfc",
+                    "secondary-container": "#95cfff",
+                    "on-primary-container": "#8aa4ff",
+                    "secondary": "#21638d",
+                    "on-secondary": "#ffffff",
+                    "surface-container-low": "#f2f4f6",
+                    "on-secondary-container": "#105982",
+                    "on-surface": "#191c1e",
+                    "on-tertiary-fixed": "#0f1d25",
+                    "error": "#ba1a1a",
+                    "surface-variant": "#e0e3e5",
+                    "surface": "#f7f9fb",
+                    "on-tertiary-fixed-variant": "#3b4951",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-container": "#9baab4",
+                    "on-error-container": "#93000a",
+                    "secondary-fixed": "#cbe6ff",
+                    "on-background": "#191c1e",
+                    "tertiary-fixed-dim": "#bac9d3",
+                    "on-surface-variant": "#444653",
+                    "primary-fixed": "#dce1ff",
+                    "tertiary-container": "#313f47",
+                    "surface-container-highest": "#e0e3e5",
+                    "tertiary-fixed": "#d6e5ef",
+                    "on-primary-fixed": "#00164e",
+                    "inverse-surface": "#2d3133",
+                    "on-secondary-fixed-variant": "#004b71",
+                    "surface-container-high": "#e6e8ea",
+                    "surface-dim": "#d8dadc",
+                    "inverse-primary": "#b5c4ff",
+                    "error-container": "#ffdad6"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "24px",
+                    "sidebar-width": "280px",
+                    "card-gap": "20px",
+                    "unit": "8px",
+                    "container-padding": "32px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "body-md": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "display-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        /* Base styles for smooth transitions and text rendering */
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        /* Liquid storage indicator base */
+        .liquid-progress::-webkit-progress-bar {
+            background-color: transparent;
+        }
+        .liquid-progress::-webkit-progress-value {
+            background: linear-gradient(90deg, #002068, #21638d);
+            border-radius: 9999px;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.3);
+        }
+        /* Custom scrollbar for main area */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body class="bg-surface-container-lowest min-h-screen text-on-background font-body-md overflow-hidden">
+<!-- TopNavBar (Shared Component) -->
+<header class="w-full h-16 bg-surface-container-lowest border-b border-surface-variant flex items-center justify-between px-6 z-40 fixed top-0">
+<div class="flex items-center gap-6">
+<!-- Brand -->
+<div class="flex items-center gap-3 w-[240px]">
+<img alt="Geoinformatic Services Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAcTFFgaPj54msYSoyLTGKu2dqKs_qxO2puP-W-xj74mJ5rvUuV4m3v_ijGHwzBY3Id3KG9UTetgFhDnx16iMy0LOJ09MlQPglmJYfleEJjZB3JzKZ1hvEETjU0CiE9lMmQZnwmxZyUum9FVYwq3dcCJk7qQRkk1SYY_CCWNpNbx6AFQrKsFQG0nFEBMxoiAEht66pDQwjnUTDpGda2cjdkFdQ__rkdU4RpDVa13ddj86FGxA1o5jIKqeIoSsJYxTf2ICf-4Hw1_Jw0A"/>
+</div>
+<!-- Search Bar -->
+<div class="relative w-[400px] group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors text-[20px]">search</span>
+<input class="w-full h-10 pl-10 pr-4 bg-surface-container-low border border-surface-variant rounded-xl font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white transition-all shadow-sm" placeholder="Search in CloudDrive" type="text"/>
+</div>
+</div>
+<!-- Right Side Actions & View Controls -->
+<div class="flex items-center gap-4">
+<!-- New Dropdown -->
+<button class="h-10 px-4 bg-white border border-surface-variant rounded-xl shadow-sm flex items-center gap-2 text-on-surface font-label-md text-label-md hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[20px]">add</span>New<span class="material-symbols-outlined text-[16px]">expand_more</span>
+</button>
+<div class="h-6 w-px bg-surface-variant mx-1"></div>
+<!-- Quick Actions -->
+<div class="flex items-center gap-1 text-on-surface-variant">
+<button class="p-2 rounded-lg hover:bg-surface-container-low transition-colors tooltip" title="Cut"><span class="material-symbols-outlined text-[20px]">content_cut</span></button>
+<button class="p-2 rounded-lg hover:bg-surface-container-low transition-colors tooltip" title="Copy"><span class="material-symbols-outlined text-[20px]">content_copy</span></button>
+<button class="p-2 rounded-lg hover:bg-surface-container-low transition-colors tooltip" title="Paste"><span class="material-symbols-outlined text-[20px]">content_paste</span></button>
+<button class="p-2 rounded-lg hover:bg-surface-container-low transition-colors tooltip" title="Rename"><span class="material-symbols-outlined text-[20px]">edit_square</span></button>
+<button class="p-2 rounded-lg hover:bg-error-container/50 hover:text-error transition-colors tooltip" title="Delete"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+</div>
+<div class="h-6 w-px bg-surface-variant mx-1"></div>
+<!-- View Controls -->
+<div class="flex items-center gap-1 bg-surface-container-low p-1 rounded-lg border border-surface-variant">
+<button class="p-1.5 rounded-md bg-white shadow-sm text-primary">
+<span class="material-symbols-outlined text-[18px]">view_list</span>
+</button>
+<button class="p-1.5 rounded-md text-on-surface-variant hover:bg-white/50 transition-colors">
+<span class="material-symbols-outlined text-[18px]">grid_view</span>
+</button>
+</div>
+<!-- Profile & Settings -->
+<div class="flex items-center gap-2 ml-2">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-all relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border border-white"></span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-all">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center border border-surface-variant shadow-sm overflow-hidden cursor-pointer">
+<img alt="User profile avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdwy8E3xpVQQyHc3-BBmTAcec9gt_gk1_GWMiZUupdW2FpDXOTCHV7Ohcx0cnEfP3XwSFCJQnRljk5AsaOQIn2ORwn_ztkHiLHEit-fI4pktelCszCRbnOULdpk-Jgck1fCZkuzj9_SNYIaXO7zl06xxHtD2l2LRtGjVgoOiir-O4mcUjxk5yeze8wRMD_Bi6loakrSdsWKzjzlVHlDXiIAq21V-FDKVOLAaFU1XeX08krpyiFRJBW0orw3zOEfYlWb1pUzbbNcLM"/>
+</div>
+</div>
+</div>
+</header>
+<!-- App Container -->
+<div class="flex w-full h-[calc(100vh-64px)] mt-16 overflow-hidden bg-surface-container-lowest">
+<!-- SideNavBar (macOS Style) -->
+<aside class="w-[280px] h-full bg-surface-container-low/50 border-r border-surface-variant flex flex-col pt-4 overflow-y-auto">
+<!-- Navigation Tabs -->
+<nav class="flex flex-col px-3 gap-0.5">
+<a class="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-lg font-label-md text-label-md font-medium transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]" style='font-variation-settings: "FILL" 1;'>folder_open</span>
+            All Files
+        </a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-on-surface-variant hover:bg-black/5 rounded-lg font-label-md text-label-md transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">schedule</span>
+            Recent
+        </a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-on-surface-variant hover:bg-black/5 rounded-lg font-label-md text-label-md transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">star</span>
+            Starred
+        </a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-on-surface-variant hover:bg-black/5 rounded-lg font-label-md text-label-md transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+            Trash
+        </a>
+</nav>
+<!-- Expandable Drives (Finder Style) -->
+<div class="mt-6">
+<h3 class="text-outline font-label-sm text-[11px] uppercase tracking-wider mb-1 px-6 font-semibold">Drives</h3>
+<div class="flex flex-col px-2">
+<!-- Personal Drive (C:) Expanded -->
+<div class="group flex flex-col gap-0.5">
+<div class="flex items-center gap-1.5 px-2 py-1 hover:bg-black/5 rounded-md cursor-pointer transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">expand_more</span>
+<span class="material-symbols-outlined text-[18px]">hard_drive</span>
+<span class="font-label-md text-label-md">Personal Drive (C:)</span>
+</div>
+<!-- Nested Folders -->
+<div class="flex flex-col pl-6">
+<div class="flex items-center gap-2 px-2 py-1 hover:bg-black/5 rounded-md cursor-pointer transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
+<img alt="Folder" class="w-4 h-4" src="https://lh3.googleusercontent.com/aida/ADBb0ujna4w-NrRgxZI1f1NLJhCvzHtASEK_Bq4ECydgMdl_ylH2pej0-mruvFhjepTVNZAERgDLedp6xqtF4s87rQwP6Ja2UQfYma3PoLk5rK3Y6yzQx67_2KzxfU7FJAbnd8fqJagCn1MxDwieEVxO1Ha3wY665a3hUPpN9Q86WmgLmlPX2wxTBKAL7XBjTJe8cX4HUNyBe_WnV9zqfcqaa-CXJq6GXf5fhm_fQwZDS18HkIlryIxvUCaW86M"/>
+<span class="font-label-md text-label-md">Documents</span>
+</div>
+<!-- Selected Nested Folder -->
+<div class="flex items-center gap-2 px-2 py-1 bg-primary/10 text-primary rounded-md cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[16px] rotate-90">chevron_right</span>
+<img alt="Folder" class="w-4 h-4" src="https://lh3.googleusercontent.com/aida/ADBb0ujna4w-NrRgxZI1f1NLJhCvzHtASEK_Bq4ECydgMdl_ylH2pej0-mruvFhjepTVNZAERgDLedp6xqtF4s87rQwP6Ja2UQfYma3PoLk5rK3Y6yzQx67_2KzxfU7FJAbnd8fqJagCn1MxDwieEVxO1Ha3wY665a3hUPpN9Q86WmgLmlPX2wxTBKAL7XBjTJe8cX4HUNyBe_WnV9zqfcqaa-CXJq6GXf5fhm_fQwZDS18HkIlryIxvUCaW86M"/>
+<span class="font-label-md text-label-md font-medium">Projects</span>
+</div>
+<!-- Deeper Nested -->
+<div class="flex flex-col pl-6">
+<div class="flex items-center gap-2 px-2 py-1 bg-black/5 rounded-md cursor-pointer transition-colors text-on-surface">
+<img alt="Folder" class="w-4 h-4" src="https://lh3.googleusercontent.com/aida/ADBb0ujna4w-NrRgxZI1f1NLJhCvzHtASEK_Bq4ECydgMdl_ylH2pej0-mruvFhjepTVNZAERgDLedp6xqtF4s87rQwP6Ja2UQfYma3PoLk5rK3Y6yzQx67_2KzxfU7FJAbnd8fqJagCn1MxDwieEVxO1Ha3wY665a3hUPpN9Q86WmgLmlPX2wxTBKAL7XBjTJe8cX4HUNyBe_WnV9zqfcqaa-CXJq6GXf5fhm_fQwZDS18HkIlryIxvUCaW86M"/>
+<span class="font-label-md text-label-md font-medium">Q4 Marketing Assets</span>
+</div>
+<div class="flex items-center gap-2 px-2 py-1 hover:bg-black/5 rounded-md cursor-pointer transition-colors text-on-surface-variant">
+<img alt="Folder" class="w-4 h-4" src="https://lh3.googleusercontent.com/aida/ADBb0ujna4w-NrRgxZI1f1NLJhCvzHtASEK_Bq4ECydgMdl_ylH2pej0-mruvFhjepTVNZAERgDLedp6xqtF4s87rQwP6Ja2UQfYma3PoLk5rK3Y6yzQx67_2KzxfU7FJAbnd8fqJagCn1MxDwieEVxO1Ha3wY665a3hUPpN9Q86WmgLmlPX2wxTBKAL7XBjTJe8cX4HUNyBe_WnV9zqfcqaa-CXJq6GXf5fhm_fQwZDS18HkIlryIxvUCaW86M"/>
+<span class="font-label-md text-label-md">Q3 Reports</span>
+</div>
+</div>
+<div class="flex items-center gap-2 px-2 py-1 hover:bg-black/5 rounded-md cursor-pointer transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] opacity-0">chevron_right</span>
+<img alt="Folder" class="w-4 h-4" src="https://lh3.googleusercontent.com/aida/ADBb0ujna4w-NrRgxZI1f1NLJhCvzHtASEK_Bq4ECydgMdl_ylH2pej0-mruvFhjepTVNZAERgDLedp6xqtF4s87rQwP6Ja2UQfYma3PoLk5rK3Y6yzQx67_2KzxfU7FJAbnd8fqJagCn1MxDwieEVxO1Ha3wY665a3hUPpN9Q86WmgLmlPX2wxTBKAL7XBjTJe8cX4HUNyBe_WnV9zqfcqaa-CXJq6GXf5fhm_fQwZDS18HkIlryIxvUCaW86M"/>
+<span class="font-label-md text-label-md">Images</span>
+</div>
+</div>
+</div>
+<!-- Project Vault (D:) Collapsed -->
+<div class="group flex items-center gap-1.5 px-2 py-1 hover:bg-black/5 rounded-md cursor-pointer transition-colors text-on-surface-variant mt-1">
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="material-symbols-outlined text-[18px]">storage</span>
+<span class="font-label-md text-label-md">Project Vault (D:)</span>
+</div>
+<!-- Shared Workspace (S:) Collapsed -->
+<div class="group flex items-center gap-1.5 px-2 py-1 hover:bg-black/5 rounded-md cursor-pointer transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="material-symbols-outlined text-[18px]">cloud_queue</span>
+<span class="font-label-md text-label-md">Shared Workspace (S:)</span>
+</div>
+</div>
+</div>
+<div class="mt-auto">
+<!-- Storage Indicator -->
+<div class="px-6 py-4">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">cloud</span>
+<span class="font-label-sm text-label-sm font-medium">Storage</span>
+</div>
+</div>
+<progress class="liquid-progress w-full h-1.5 rounded-full bg-surface-variant overflow-hidden" max="100" value="65"></progress>
+<div class="mt-2 text-[11px] font-label-sm text-outline">
+                65 GB of 100 GB used
+            </div>
+</div>
+<!-- Footer Tabs -->
+<div class="flex flex-col px-3 pb-4 gap-0.5 border-t border-surface-variant/60 pt-2">
+<a class="flex items-center gap-2 px-3 py-1.5 text-on-surface-variant hover:bg-black/5 rounded-lg font-label-md text-label-md transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]">help</span>
+                Help
+            </a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 rounded-lg font-label-md text-label-md transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]">logout</span>
+                Logout
+            </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col relative h-full bg-white">
+<!-- Breadcrumbs -->
+<div class="px-8 py-3 flex items-center gap-2 border-b border-surface-variant/40 bg-white">
+<span class="material-symbols-outlined text-outline text-[18px]">home</span>
+<span class="material-symbols-outlined text-outline-variant text-[16px]">chevron_right</span>
+<span class="font-label-md text-label-md text-on-surface-variant hover:text-primary cursor-pointer">Personal Drive (C:)</span>
+<span class="material-symbols-outlined text-outline-variant text-[16px]">chevron_right</span>
+<span class="font-label-md text-label-md text-on-surface-variant hover:text-primary cursor-pointer">Documents</span>
+<span class="material-symbols-outlined text-outline-variant text-[16px]">chevron_right</span>
+<span class="font-label-md text-label-md text-on-surface-variant hover:text-primary cursor-pointer">Projects</span>
+<span class="material-symbols-outlined text-outline-variant text-[16px]">chevron_right</span>
+<span class="font-label-md text-label-md text-on-surface font-semibold">Q4 Marketing Assets</span>
+</div>
+<!-- Header Title -->
+<div class="px-8 pt-6 pb-2">
+<h2 class="font-headline-md text-on-surface">Q4 Marketing Assets</h2>
+</div>
+<!-- List View Content -->
+<div class="flex-1 overflow-y-auto px-4 pb-8">
+<!-- Table Head -->
+<div class="grid grid-cols-[auto_1fr_200px_150px_100px] gap-4 px-4 py-2 border-b border-surface-variant font-label-sm text-[12px] text-outline uppercase tracking-wider sticky top-0 bg-white/90 backdrop-blur-md z-20">
+<div class="w-8"></div>
+<div class="flex items-center gap-1 cursor-pointer hover:text-on-surface font-medium">Name <span class="material-symbols-outlined text-[16px]">arrow_upward</span></div>
+<div class="cursor-pointer hover:text-on-surface font-medium">Date Modified</div>
+<div class="cursor-pointer hover:text-on-surface font-medium">Type</div>
+<div class="text-right cursor-pointer hover:text-on-surface font-medium">Size</div>
+</div>
+<!-- List Items -->
+<div class="flex flex-col mt-1">
+<!-- Item 1 (With iOS-style Context Menu) -->
+<div class="group grid grid-cols-[auto_1fr_200px_150px_100px] gap-4 px-4 py-2 items-center cursor-pointer transition-colors rounded-lg bg-primary/5 border border-primary/20 relative">
+<div class="w-8 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">check_box</span>
+</div>
+<div class="flex items-center gap-3 font-body-md text-[14px] text-on-surface font-medium">
+<img alt="Folder" class="w-7 h-7" src="https://lh3.googleusercontent.com/aida/ADBb0ujna4w-NrRgxZI1f1NLJhCvzHtASEK_Bq4ECydgMdl_ylH2pej0-mruvFhjepTVNZAERgDLedp6xqtF4s87rQwP6Ja2UQfYma3PoLk5rK3Y6yzQx67_2KzxfU7FJAbnd8fqJagCn1MxDwieEVxO1Ha3wY665a3hUPpN9Q86WmgLmlPX2wxTBKAL7XBjTJe8cX4HUNyBe_WnV9zqfcqaa-CXJq6GXf5fhm_fQwZDS18HkIlryIxvUCaW86M"/>Brand Guidelines 2024
+                </div>
+<div class="font-body-md text-[13px] text-on-surface-variant">Oct 24, 2023 10:30 AM</div>
+<div class="font-body-md text-[13px] text-on-surface-variant">File folder</div>
+<div class="font-body-md text-[13px] text-on-surface-variant text-right">--</div>
+<!-- iOS Style Context Menu -->
+<div class="absolute left-1/4 top-[80%] w-56 bg-white/70 backdrop-blur-2xl border border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-200">
+<div class="flex flex-col bg-surface-container-low/50 rounded-xl overflow-hidden mb-1">
+<button class="w-full px-3 py-2 flex items-center justify-between hover:bg-black/5 text-on-surface font-body-md text-[14px] transition-colors text-left border-b border-surface-variant/30">
+                            Open <span class="material-symbols-outlined text-[18px]">launch</span>
+</button>
+<button class="w-full px-3 py-2 flex items-center justify-between hover:bg-black/5 text-on-surface font-body-md text-[14px] transition-colors text-left">
+                            Download <span class="material-symbols-outlined text-[18px]">download</span>
+</button>
+</div>
+<div class="flex flex-col bg-surface-container-low/50 rounded-xl overflow-hidden mb-1">
+<button class="w-full px-3 py-2 flex items-center justify-between hover:bg-black/5 text-on-surface font-body-md text-[14px] transition-colors text-left border-b border-surface-variant/30">
+                            Share <span class="material-symbols-outlined text-[18px]">share</span>
+</button>
+<button class="w-full px-3 py-2 flex items-center justify-between hover:bg-black/5 text-on-surface font-body-md text-[14px] transition-colors text-left border-b border-surface-variant/30">
+                            Star <span class="material-symbols-outlined text-[18px]">star</span>
+</button>
+<button class="w-full px-3 py-2 flex items-center justify-between hover:bg-black/5 text-on-surface font-body-md text-[14px] transition-colors text-left border-b border-surface-variant/30">
+                            Rename <span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="w-full px-3 py-2 flex items-center justify-between hover:bg-black/5 text-on-surface font-body-md text-[14px] transition-colors text-left">
+                            Move <span class="material-symbols-outlined text-[18px]">drive_file_move</span>
+</button>
+</div>
+<div class="flex flex-col bg-surface-container-low/50 rounded-xl overflow-hidden">
+<button class="w-full px-3 py-2 flex items-center justify-between hover:bg-error/10 text-error font-body-md text-[14px] transition-colors text-left">
+                            Delete <span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="group grid grid-cols-[auto_1fr_200px_150px_100px] gap-4 px-4 py-2 items-center hover:bg-surface-container-low transition-colors cursor-pointer rounded-lg border border-transparent">
+<div class="w-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-outline text-[20px]">check_box_outline_blank</span>
+</div>
+<div class="flex items-center gap-3 font-body-md text-[14px] text-on-surface">
+<img alt="Folder" class="w-7 h-7" src="https://lh3.googleusercontent.com/aida/ADBb0ujna4w-NrRgxZI1f1NLJhCvzHtASEK_Bq4ECydgMdl_ylH2pej0-mruvFhjepTVNZAERgDLedp6xqtF4s87rQwP6Ja2UQfYma3PoLk5rK3Y6yzQx67_2KzxfU7FJAbnd8fqJagCn1MxDwieEVxO1Ha3wY665a3hUPpN9Q86WmgLmlPX2wxTBKAL7XBjTJe8cX4HUNyBe_WnV9zqfcqaa-CXJq6GXf5fhm_fQwZDS18HkIlryIxvUCaW86M"/>Campaign Imagery
+                </div>
+<div class="font-body-md text-[13px] text-on-surface-variant">Oct 22, 2023 04:15 PM</div>
+<div class="font-body-md text-[13px] text-on-surface-variant">File folder</div>
+<div class="font-body-md text-[13px] text-on-surface-variant text-right">--</div>
+</div>
+<!-- Item 3 -->
+<div class="group grid grid-cols-[auto_1fr_200px_150px_100px] gap-4 px-4 py-2 items-center hover:bg-surface-container-low transition-colors cursor-pointer rounded-lg border border-transparent">
+<div class="w-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-outline text-[20px]">check_box_outline_blank</span>
+</div>
+<div class="flex items-center gap-3 font-body-md text-[14px] text-on-surface">
+<img alt="Document" class="w-7 h-7" src="https://lh3.googleusercontent.com/aida/ADBb0ug4Of-iatfO7eIzczJ-DXcnCAfgpJ8Kh9a_FiBRLy_XDgMPbPupbGd0FD9TL3BGLRBiyx7pj0woEACQZ0NuVeLzPdQ8KThZ6Y_yYgZ-C1RKIrNkCa0vy7Fg0bESC7vunyCWYKvNxqHAAuqLO-68-F4KD-KEfwEyGF-gQGgU0w5kZ7U1MfcJ-CCWb8SeM9GGVTGXmORSZUCFkPx6n1zCyFThbtqEnwa8TDr4c-cUP-3UAQJvSSxq7M2u8w"/>Q4_Strategy_Brief_v2.docx
+                </div>
+<div class="font-body-md text-[13px] text-on-surface-variant">Oct 20, 2023 09:00 AM</div>
+<div class="font-body-md text-[13px] text-on-surface-variant">Word Document</div>
+<div class="font-body-md text-[13px] text-on-surface-variant text-right">2.4 MB</div>
+</div>
+<!-- Item 4 -->
+<div class="group grid grid-cols-[auto_1fr_200px_150px_100px] gap-4 px-4 py-2 items-center hover:bg-surface-container-low transition-colors cursor-pointer rounded-lg border border-transparent">
+<div class="w-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-outline text-[20px]">check_box_outline_blank</span>
+</div>
+<div class="flex items-center gap-3 font-body-md text-[14px] text-on-surface">
+<img alt="Spreadsheet" class="w-7 h-7" src="https://lh3.googleusercontent.com/aida/ADBb0ug4Of-iatfO7eIzczJ-DXcnCAfgpJ8Kh9a_FiBRLy_XDgMPbPupbGd0FD9TL3BGLRBiyx7pj0woEACQZ0NuVeLzPdQ8KThZ6Y_yYgZ-C1RKIrNkCa0vy7Fg0bESC7vunyCWYKvNxqHAAuqLO-68-F4KD-KEfwEyGF-gQGgU0w5kZ7U1MfcJ-CCWb8SeM9GGVTGXmORSZUCFkPx6n1zCyFThbtqEnwa8TDr4c-cUP-3UAQJvSSxq7M2u8w"/>Budget_Forecast_FY24.xlsx
+                </div>
+<div class="font-body-md text-[13px] text-on-surface-variant">Oct 18, 2023 02:45 PM</div>
+<div class="font-body-md text-[13px] text-on-surface-variant">Excel Spreadsheet</div>
+<div class="font-body-md text-[13px] text-on-surface-variant text-right">856 KB</div>
+</div>
+<!-- Item 5 -->
+<div class="group grid grid-cols-[auto_1fr_200px_150px_100px] gap-4 px-4 py-2 items-center hover:bg-surface-container-low transition-colors cursor-pointer rounded-lg border border-transparent">
+<div class="w-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-outline text-[20px]">check_box_outline_blank</span>
+</div>
+<div class="flex items-center gap-3 font-body-md text-[14px] text-on-surface">
+<img alt="Image" class="w-7 h-7" src="https://lh3.googleusercontent.com/aida/ADBb0ug4Of-iatfO7eIzczJ-DXcnCAfgpJ8Kh9a_FiBRLy_XDgMPbPupbGd0FD9TL3BGLRBiyx7pj0woEACQZ0NuVeLzPdQ8KThZ6Y_yYgZ-C1RKIrNkCa0vy7Fg0bESC7vunyCWYKvNxqHAAuqLO-68-F4KD-KEfwEyGF-gQGgU0w5kZ7U1MfcJ-CCWb8SeM9GGVTGXmORSZUCFkPx6n1zCyFThbtqEnwa8TDr4c-cUP-3UAQJvSSxq7M2u8w"/>Hero_Banner_Final.png
+                </div>
+<div class="font-body-md text-[13px] text-on-surface-variant">Oct 15, 2023 11:20 AM</div>
+<div class="font-body-md text-[13px] text-on-surface-variant">PNG Image</div>
+<div class="font-body-md text-[13px] text-on-surface-variant text-right">4.1 MB</div>
+</div>
+<!-- Item 6 -->
+<div class="group grid grid-cols-[auto_1fr_200px_150px_100px] gap-4 px-4 py-2 items-center hover:bg-surface-container-low transition-colors cursor-pointer rounded-lg border border-transparent">
+<div class="w-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-outline text-[20px]">check_box_outline_blank</span>
+</div>
+<div class="flex items-center gap-3 font-body-md text-[14px] text-on-surface">
+<img alt="Presentation" class="w-7 h-7" src="https://lh3.googleusercontent.com/aida/ADBb0ug4Of-iatfO7eIzczJ-DXcnCAfgpJ8Kh9a_FiBRLy_XDgMPbPupbGd0FD9TL3BGLRBiyx7pj0woEACQZ0NuVeLzPdQ8KThZ6Y_yYgZ-C1RKIrNkCa0vy7Fg0bESC7vunyCWYKvNxqHAAuqLO-68-F4KD-KEfwEyGF-gQGgU0w5kZ7U1MfcJ-CCWb8SeM9GGVTGXmORSZUCFkPx6n1zCyFThbtqEnwa8TDr4c-cUP-3UAQJvSSxq7M2u8w"/>All_Hands_Deck_Oct.pptx
+                </div>
+<div class="font-body-md text-[13px] text-on-surface-variant">Oct 10, 2023 09:15 AM</div>
+<div class="font-body-md text-[13px] text-on-surface-variant">PowerPoint Deck</div>
+<div class="font-body-md text-[13px] text-on-surface-variant text-right">12.5 MB</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
