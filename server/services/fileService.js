@@ -4,6 +4,14 @@ const path = require('path');
 const starService = require('./starService');
 const recycleBinService = require('./recycleBinService');
 
+async function safeMkdir(dir, options) {
+  const resolved = path.resolve(dir);
+  if (path.parse(resolved).root === resolved) {
+    return;
+  }
+  await fsPromises.mkdir(dir, options);
+}
+
 
 // Hidden/system items to filter out
 const HIDDEN_ITEMS = new Set([
@@ -101,7 +109,7 @@ async function listDirectory(dirPath) {
  */
 async function createDirectory(dirPath) {
   const normalizedPath = path.resolve(dirPath);
-  await fsPromises.mkdir(normalizedPath, { recursive: false });
+  await safeMkdir(normalizedPath, { recursive: false });
   return { success: true, path: normalizedPath };
 }
 
@@ -255,7 +263,7 @@ async function searchFiles(rootPath, query, maxResults = 100) {
 // --- Helpers ---
 
 async function copyDirRecursive(src, dest) {
-  await fsPromises.mkdir(dest, { recursive: true });
+  await safeMkdir(dest, { recursive: true });
   const entries = await fsPromises.readdir(src, { withFileTypes: true });
 
   for (const entry of entries) {

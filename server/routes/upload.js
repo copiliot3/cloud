@@ -27,7 +27,10 @@ const storage = multer.diskStorage({
     }
     
     // Ensure nested directories exist
-    fs.mkdirSync(targetDir, { recursive: true });
+    const resolved = path.resolve(targetDir);
+    if (path.parse(resolved).root !== resolved) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
     cb(null, targetDir);
   },
   filename: (req, file, cb) => {

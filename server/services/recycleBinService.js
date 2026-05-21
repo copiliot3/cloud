@@ -9,9 +9,17 @@ const MANIFEST_FILE = path.join(os.homedir(), '.clouddrive-lumina', 'recyclebin.
 const SETTINGS_FILE = path.join(os.homedir(), '.clouddrive-lumina', 'recyclebin-settings.json');
 const DEFAULT_RETENTION_DAYS = 30;
 
+async function safeMkdir(dir, options) {
+  const resolved = path.resolve(dir);
+  if (path.parse(resolved).root === resolved) {
+    return;
+  }
+  await fsPromises.mkdir(dir, options);
+}
+
 async function ensureStore() {
-  await fsPromises.mkdir(RECYCLE_ROOT, { recursive: true });
-  await fsPromises.mkdir(path.dirname(MANIFEST_FILE), { recursive: true });
+  await safeMkdir(RECYCLE_ROOT, { recursive: true });
+  await safeMkdir(path.dirname(MANIFEST_FILE), { recursive: true });
 }
 
 async function readManifest() {
@@ -50,7 +58,7 @@ async function writeSettings(settings) {
 }
 
 async function copyDirRecursive(src, dest) {
-  await fsPromises.mkdir(dest, { recursive: true });
+  await safeMkdir(dest, { recursive: true });
   const entries = await fsPromises.readdir(src, { withFileTypes: true });
 
   for (const entry of entries) {
@@ -65,7 +73,7 @@ async function copyDirRecursive(src, dest) {
 }
 
 async function movePath(src, dest, stats) {
-  await fsPromises.mkdir(path.dirname(dest), { recursive: true });
+  await safeMkdir(path.dirname(dest), { recursive: true });
 
   try {
     await fsPromises.rename(src, dest);

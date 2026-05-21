@@ -60,10 +60,11 @@ export default function FileGridView() {
   return (
     <div className="flex-1 overflow-y-auto px-10 py-6">
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-x-6 gap-y-8">
-        {items.map((item) => {
+        {items.map((item, index) => {
           const isSelected = selectedItems.has(item.path);
           const isCut = clipboardAction === 'cut' && clipboard.includes(item.path);
           const { accentColor } = useUIStore.getState();
+          const delay = `${Math.min(index, 30) * 15}ms`;
           
           return (
             <div
@@ -72,7 +73,7 @@ export default function FileGridView() {
               onDoubleClick={() => handleDoubleClick(item)}
               onContextMenu={(e) => handleContextMenu(e, item)}
               className={`
-                group flex flex-col items-center p-3.5 rounded-2xl cursor-pointer transition-all duration-200 relative border
+                group flex flex-col items-center p-3.5 rounded-2xl cursor-pointer transition-all duration-200 relative border animate-file-appear
                 ${isSelected
                   ? ''
                   : 'border-transparent hover:bg-black/5 dark:hover:bg-white/5 hover:border-black/5 dark:hover:border-white/5'
@@ -82,8 +83,11 @@ export default function FileGridView() {
               style={isSelected ? { 
                 backgroundColor: `${accentColor}22`, 
                 borderColor: `${accentColor}80`,
-                boxShadow: `0 8px 24px -4px ${accentColor}3D`
-              } : {}}
+                boxShadow: `0 8px 24px -4px ${accentColor}3D`,
+                animationDelay: delay
+              } : {
+                animationDelay: delay
+              }}
             >
               {/* Icon Container */}
               <div className={`relative mb-2 transition-transform ${isSelected ? '' : 'group-hover:scale-[1.02]'}`}>

@@ -150,6 +150,14 @@ async function listSharedDirectory(shareId, relativePath = '') {
   };
 }
 
+async function safeMkdir(dir, options) {
+  const resolved = path.resolve(dir);
+  if (path.parse(resolved).root === resolved) {
+    return;
+  }
+  await fsPromises.mkdir(dir, options);
+}
+
 async function createDirectory(shareId, relativePath, name) {
   const share = await getShare(shareId);
   assertWritable(share);
@@ -165,7 +173,7 @@ async function createDirectory(shareId, relativePath, name) {
   if (!isInside(parent, target)) {
     throw Object.assign(new Error('Folder name is invalid'), { status: 400 });
   }
-  await fsPromises.mkdir(target, { recursive: false });
+  await safeMkdir(target, { recursive: false });
   return { success: true, item: await itemMetadata(target, share.path) };
 }
 
@@ -220,7 +228,7 @@ async function saveUploadedFiles(shareId, relativePath, files) {
   }
 
   const targetDir = resolveSharedPath(share, relativePath);
-  await fsPromises.mkdir(targetDir, { recursive: true });
+  await safeMkdir(targetDir, { recursive: true });
   const saved = [];
 
   for (const file of files) {
@@ -228,7 +236,7 @@ async function saveUploadedFiles(shareId, relativePath, files) {
     const safeRelative = sanitizeRelativePath(originalName);
     if (!safeRelative) continue;
     const target = resolveSharedPath(share, path.join(sanitizeRelativePath(relativePath), safeRelative));
-    await fsPromises.mkdir(path.dirname(target), { recursive: true });
+    await safeMkdir(path.dirname(target), { recursive: true });
     await fsPromises.writeFile(target, file.buffer);
     saved.push(await itemMetadata(target, share.path));
   }

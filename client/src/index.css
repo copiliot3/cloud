@@ -813,3 +813,19 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
 }
+
+@keyframes fileAppear {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-file-appear {
+  opacity: 0;
+  animation: fileAppear 0.35s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+}
