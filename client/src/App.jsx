@@ -9,6 +9,7 @@ import FileGridView from './components/files/FileGridView';
 import StarredView from './components/files/StarredView';
 import RecentView from './components/files/RecentView';
 import TrashView from './components/files/TrashView';
+import OwnerSharedView from './components/files/SharedView';
 import Breadcrumb from './components/navigation/Breadcrumb';
 import ContextMenu from './components/actions/ContextMenu';
 import UploadZone from './components/actions/UploadZone';
@@ -162,6 +163,8 @@ export default function App() {
                 <RecentView />
               ) : currentView === 'trash' ? (
                 <TrashView />
+              ) : currentView === 'shared' ? (
+                <OwnerSharedView />
               ) : (
                 <>
                   <div className="px-8 py-2">

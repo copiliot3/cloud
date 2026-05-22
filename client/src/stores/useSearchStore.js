@@ -32,14 +32,17 @@ const useSearchStore = create((set, get) => ({
       return;
     }
 
+    // Keep isActive true while typing so shared topbar doesn't unmount.
     set({ query, isSearching: true, isActive: true, selectedIndex: -1 });
 
-    // Ultra-fast debounce — 60ms
+    // Debounce search execution (not UI)
+    const trimmed = query.trim();
     const timer = setTimeout(() => {
-      get()._startStreamSearch(query.trim());
-    }, 60);
+      get()._startStreamSearch(trimmed);
+    }, 120);
 
     set({ _debounceTimer: timer });
+
   },
 
   clearSearch: () => {
@@ -90,8 +93,13 @@ const useSearchStore = create((set, get) => ({
     const { _eventSource } = get();
     if (_eventSource) _eventSource.close();
 
-    // Get current path from fileStore
-    const searchPath = useFileStore.getState().currentPath || 'C:\\';
+    // Get current path from fileStore.
+    // In shared mode we must constrain search scope to the shared folder root.
+    const { shareId, shareInfo, currentPath } = useFileStore.getState();
+    const searchPath = (shareId && (shareInfo?.path || (shareInfo && typeof shareInfo.path === 'string' ? shareInfo.path : null)))
+      || currentPath
+      || 'C:\\';
+
 
     const url = `/api/files/search/stream?q=${encodeURIComponent(query)}&path=${encodeURIComponent(searchPath)}`;
     const startTime = performance.now();

@@ -1,0 +1,16 @@
+[
+  {
+    "id": "f727b258-d426-4094-99d4-7fad5f5d56d3",
+    "path": "D:\\0000_CHAK NO 93 12 L\\RASTER",
+    "permission": "write",
+    "isDirectory": true,
+    "createdAt": "2026-05-22T12:51:58.245Z"
+  },
+  {
+    "id": "755cf231-b46b-408b-be8a-64084a664a88",
+    "path": "D:\\0000_CHAK NO 93 12 L\\RASTER",
+    "permission": "read",
+    "isDirectory": true,
+    "createdAt": "2026-05-22T12:51:57.087Z"
+  }
+]

@@ -12,7 +12,7 @@ const upload = multer({
 });
 
 function publicLink(req, id) {
-  const origin = req.headers.origin || 'http://localhost:5173';
+  const origin = req.headers.origin || `${req.protocol}://${req.get('host')}` || 'http://localhost:5173';
   return `${origin}/?share=${id}`;
 }
 
@@ -25,6 +25,15 @@ router.post('/', async (req, res, next) => {
 
     const share = await shareService.createShare(filePath, permission);
     res.json({ success: true, share, link: publicLink(req, share.id) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/list/all', async (req, res, next) => {
+  try {
+    const shares = await shareService.getAllShares();
+    res.json({ success: true, shares });
   } catch (err) {
     next(err);
   }
@@ -143,6 +152,38 @@ router.get('/download-zip/:id', async (req, res, next) => {
       archive.file(target, { name: path.basename(target) });
     }
     await archive.finalize();
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+// Delete a single share by ID
+router.delete('/:id', async (req, res, next) => {
+  try {
+    const result = shareService.deleteShare(req.params.id);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Clear all shares
+router.delete('/', async (req, res, next) => {
+  try {
+    const result = shareService.clearAllShares();
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Update share permission by ID
+router.post('/permission/:id', async (req, res, next) => {
+  try {
+    const { permission } = req.body;
+    const share = shareService.updateSharePermission(req.params.id, permission);
+    res.json({ success: true, share });
   } catch (err) {
     next(err);
   }

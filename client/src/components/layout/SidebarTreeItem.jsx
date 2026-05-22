@@ -7,6 +7,7 @@ export default function SidebarTreeItem({ label, path, isDrive, defaultExpanded 
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const { currentPath, navigateTo } = useFileStore();
   const { setCurrentView, setActiveNav, accentColor } = useUIStore();
 
@@ -23,6 +24,7 @@ export default function SidebarTreeItem({ label, path, isDrive, defaultExpanded 
     if (isExpanded && children.length === 0) {
       const fetchChildren = async () => {
         setLoading(true);
+        setError(null);
         try {
           const res = await fileApi.list(path);
           if (res.items) {
@@ -32,6 +34,8 @@ export default function SidebarTreeItem({ label, path, isDrive, defaultExpanded 
           }
         } catch (err) {
           console.error("Failed to fetch folders for sidebar:", err);
+          setError(err.message || 'Unable to load folders');
+          setChildren([]);
         } finally {
           setLoading(false);
         }
@@ -94,6 +98,20 @@ export default function SidebarTreeItem({ label, path, isDrive, defaultExpanded 
             >
               <div className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
               <span className="text-[11px] text-outline-variant">Loading...</span>
+            </div>
+          ) : error ? (
+            <div
+              className="text-[11px] text-error px-2 py-1"
+              style={{ paddingLeft: `${(level + 1) * 12 + 28}px` }}
+            >
+              {error}
+            </div>
+          ) : children.length === 0 ? (
+            <div
+              className="text-[11px] text-on-surface-variant px-2 py-1"
+              style={{ paddingLeft: `${(level + 1) * 12 + 28}px` }}
+            >
+              No folders found
             </div>
           ) : (
             children.map(child => (

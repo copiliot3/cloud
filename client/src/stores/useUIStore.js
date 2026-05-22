@@ -18,9 +18,11 @@ const useUIStore = create((set, get) => ({
   setActiveNav: (id) => set({ activeNav: id }),
 
   // Context menu
-  contextMenu: { visible: false, x: 0, y: 0, item: null },
-  showContextMenu: (x, y, item) => set({ contextMenu: { visible: true, x, y, item } }),
-  hideContextMenu: () => set({ contextMenu: { visible: false, x: 0, y: 0, item: null } }),
+  contextMenu: { visible: false, x: 0, y: 0, item: null, options: {} },
+  showContextMenu: (x, y, item, options = {}) =>
+    set({ contextMenu: { visible: true, x, y, item, options } }),
+  hideContextMenu: () =>
+    set({ contextMenu: { visible: false, x: 0, y: 0, item: null, options: {} } }),
 
   // Modal
   modal: { visible: false, type: null, data: null },
@@ -122,6 +124,23 @@ const useUIStore = create((set, get) => ({
       darkMode: 'light'
     });
     document.documentElement.style.setProperty('--primary', defaultColor);
+  },
+
+  // Share mode (when accessing via share link)
+  shareMode: { active: false, id: null, info: null },
+  setShareMode: (shareInfo) => {
+    set({
+      shareMode: {
+        active: true,
+        id: shareInfo.id,
+        info: shareInfo,
+      },
+    });
+  },
+  exitShareMode: () => {
+    set({
+      shareMode: { active: false, id: null, info: null },
+    });
   },
 }));
 

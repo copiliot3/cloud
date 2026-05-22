@@ -3,7 +3,7 @@ import useUIStore from '../../stores/useUIStore';
 
 export default function Breadcrumb() {
   const { currentPath, history, historyIndex, goBack, goForward, goUp, navigateTo, refresh } = useFileStore();
-  const { currentView, setCurrentView, accentColor } = useUIStore();
+  const { currentView, setCurrentView, accentColor, shareMode } = useUIStore();
 
   const segments = currentPath ? currentPath.split('\\').filter(Boolean) : [];
 
@@ -42,22 +42,34 @@ export default function Breadcrumb() {
 
       <div className="w-px h-4 bg-surface-variant dark:bg-zinc-800 mx-1"></div>
 
-      <button onClick={handleHomeClick} className="flex items-center gap-1.5 h-8 px-2.5 rounded-full hover:bg-surface-container-low dark:hover:bg-zinc-800 transition-colors text-on-surface-variant dark:text-zinc-400 font-medium text-[13px]">
-        <span className="material-symbols-outlined text-[16px]">desktop_windows</span>
-        This PC
-      </button>
+      {!shareMode.active && (
+        <>
+          <button onClick={handleHomeClick} className="flex items-center gap-1.5 h-8 px-2.5 rounded-full hover:bg-surface-container-low dark:hover:bg-zinc-800 transition-colors text-on-surface-variant dark:text-zinc-400 font-medium text-[13px]">
+            <span className="material-symbols-outlined text-[16px]">desktop_windows</span>
+            This PC
+          </button>
 
-      <span className="material-symbols-outlined text-outline-variant dark:text-zinc-600 text-[16px]">chevron_right</span>
-      
-      <button 
-        onClick={handleHomeClick} 
-        className="font-medium text-[13px] text-on-surface-variant dark:text-zinc-400 transition-colors"
-        style={{ color: currentView === 'drives' ? accentColor : undefined }}
-        onMouseEnter={(e) => e.target.style.color = accentColor}
-        onMouseLeave={(e) => e.target.style.color = currentView === 'drives' ? accentColor : ''}
-      >
-        Drives
-      </button>
+          <span className="material-symbols-outlined text-outline-variant dark:text-zinc-600 text-[16px]">chevron_right</span>
+          
+          <button 
+            onClick={handleHomeClick} 
+            className="font-medium text-[13px] text-on-surface-variant dark:text-zinc-400 transition-colors"
+            style={{ color: currentView === 'drives' ? accentColor : undefined }}
+            onMouseEnter={(e) => e.target.style.color = accentColor}
+            onMouseLeave={(e) => e.target.style.color = currentView === 'drives' ? accentColor : ''}
+          >
+            Drives
+          </button>
+        </>
+      )}
+
+      {shareMode.active && (
+        <>
+          <span className="font-medium text-[13px] text-on-surface-variant dark:text-zinc-400">
+            Shared Item
+          </span>
+        </>
+      )}
 
       {currentView !== 'drives' && segments.map((segment, index) => (
         <div key={index} className="flex items-center gap-2">

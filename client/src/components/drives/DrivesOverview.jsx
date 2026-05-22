@@ -8,16 +8,21 @@ import { useEffect } from 'react';
 export default function DrivesOverview() {
   const { drives, loading, fetchDrives } = useDriveStore();
   const { navigateTo } = useFileStore();
-  const { setCurrentView, setActiveNav, accentColor } = useUIStore();
+  const { setCurrentView, setActiveNav, accentColor, addToast } = useUIStore();
 
   useEffect(() => {
     fetchDrives();
   }, [fetchDrives]);
 
-  const handleDriveClick = (drive) => {
+  const handleDriveClick = async (drive) => {
+    const drivePath = `${drive.letter}:\\`;
     setCurrentView('files');
     setActiveNav('my-files');
-    navigateTo(`${drive.letter}:\\`);
+    try {
+      await navigateTo(drivePath);
+    } catch (err) {
+      addToast(`Unable to open ${drive.label}: ${err.message}`, 'error');
+    }
   };
 
   if (loading) {

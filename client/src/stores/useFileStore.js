@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { fileApi } from '../api/fileApi';
+import { shareApi } from '../api/shareApi';
 
 const useFileStore = create((set, get) => ({
   // Current directory state
@@ -9,6 +10,10 @@ const useFileStore = create((set, get) => ({
   loading: false,
   error: null,
 
+  // Share mode state
+  shareId: null,
+  shareInfo: null,
+
   // Starred state
   starredItems: [],
   starredLoading: false,
@@ -16,6 +21,10 @@ const useFileStore = create((set, get) => ({
   // Recent state
   recentItems: [],
   recentLoading: false,
+
+  // Shared items (for sidebar in main dashboard)
+  sharedItems: [],
+  sharedItemsLoading: false,
 
   // Recycle Bin state
   recycleBinItems: [],
@@ -44,12 +53,28 @@ const useFileStore = create((set, get) => ({
   searchResults: null,
   searching: false,
 
+  // Set share mode
+  setShareMode: (shareId, shareInfo) => {
+    set({ shareId, shareInfo, history: [], historyIndex: -1 });
+  },
+
+  exitShareMode: () => {
+    set({ shareId: null, shareInfo: null, history: [], historyIndex: -1 });
+  },
+
   // Navigate to a path
   navigateTo: async (dirPath) => {
-    const { history, historyIndex } = get();
+    const { history, historyIndex, shareId } = get();
     set({ loading: true, error: null, selectedItems: new Set(), searchResults: null, searchQuery: '' });
     try {
-      const data = await fileApi.list(dirPath);
+      let data;
+      if (shareId) {
+        // Use shareApi for shared links
+        data = await shareApi.list(shareId, dirPath || '');
+      } else {
+        // Use fileApi for normal navigation
+        data = await fileApi.list(dirPath);
+      }
       const sortedItems = sortItems(data.items, get().sortBy, get().sortDir);
       const newHistory = [...history.slice(0, historyIndex + 1), dirPath];
       set({
@@ -67,11 +92,16 @@ const useFileStore = create((set, get) => ({
 
   // Refresh current directory
   refresh: async () => {
-    const { currentPath } = get();
-    if (!currentPath) return;
+    const { currentPath, shareId } = get();
+    if (!currentPath && !shareId) return;
     set({ loading: true, error: null });
     try {
-      const data = await fileApi.list(currentPath);
+      let data;
+      if (shareId) {
+        data = await shareApi.list(shareId, currentPath || '');
+      } else {
+        data = await fileApi.list(currentPath);
+      }
       const sortedItems = sortItems(data.items, get().sortBy, get().sortDir);
       set({ items: sortedItems, loading: false, selectedItems: new Set() });
     } catch (err) {
@@ -81,14 +111,15 @@ const useFileStore = create((set, get) => ({
 
   // Go back in history
   goBack: () => {
-    const { history, historyIndex } = get();
+    const { history, historyIndex, shareId } = get();
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
       const path = history[newIndex];
       set({ historyIndex: newIndex });
       // Navigate without adding to history
       set({ loading: true, error: null, selectedItems: new Set() });
-      fileApi.list(path).then(data => {
+      const listFn = shareId ? shareApi.list(shareId, path || '') : fileApi.list(path);
+      listFn.then(data => {
         const sortedItems = sortItems(data.items, get().sortBy, get().sortDir);
         set({ currentPath: data.path, parentPath: data.parent, items: sortedItems, loading: false });
       }).catch(err => set({ error: err.message, loading: false }));
@@ -97,13 +128,14 @@ const useFileStore = create((set, get) => ({
 
   // Go forward in history
   goForward: () => {
-    const { history, historyIndex } = get();
+    const { history, historyIndex, shareId } = get();
     if (historyIndex < history.length - 1) {
       const newIndex = historyIndex + 1;
       const path = history[newIndex];
       set({ historyIndex: newIndex });
       set({ loading: true, error: null, selectedItems: new Set() });
-      fileApi.list(path).then(data => {
+      const listFn = shareId ? shareApi.list(shareId, path || '') : fileApi.list(path);
+      listFn.then(data => {
         const sortedItems = sortItems(data.items, get().sortBy, get().sortDir);
         set({ currentPath: data.path, parentPath: data.parent, items: sortedItems, loading: false });
       }).catch(err => set({ error: err.message, loading: false }));
@@ -330,9 +362,17 @@ const useFileStore = create((set, get) => ({
   },
 
   deleteFiles: async (paths) => {
+    const { shareId } = get();
     try {
-      const response = await fileApi.delete(paths);
-      // Instantly refresh the directory view so renamed items disappear
+      let response;
+      if (shareId) {
+        // In share mode, use shareApi
+        response = await shareApi.delete(shareId, paths);
+      } else {
+        // Normal mode, use fileApi
+        response = await fileApi.delete(paths);
+      }
+      // Instantly refresh the directory view so deleted items disappear
       get().refresh();
 
       const jobs = response.results?.map(r => r.job).filter(Boolean) || [];

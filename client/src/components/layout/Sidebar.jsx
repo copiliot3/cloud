@@ -4,9 +4,12 @@ import useUIStore from '../../stores/useUIStore';
 import useDriveStore from '../../stores/useDriveStore';
 import { formatDriveSize } from '../../utils/formatBytes';
 import SidebarTreeItem from './SidebarTreeItem';
+import SharedSidebarSection from './SharedSidebarSection';
 
-export default function Sidebar() {
-  const { sidebarOpen, activeNav, setActiveNav, setCurrentView, currentView, showModal, accentColor } = useUIStore();
+
+export default function Sidebar({ isShared = false }) {
+
+  const { sidebarOpen, activeNav, setActiveNav, setCurrentView, currentView, showModal, accentColor, shareMode } = useUIStore();
   const { summary, drives, fetchDrives } = useDriveStore();
   const { navigateTo, currentPath } = useFileStore();
 
@@ -24,6 +27,8 @@ export default function Sidebar() {
       if (activeNav !== 'recent') setActiveNav('recent');
     } else if (currentView === 'trash') {
       if (activeNav !== 'trash') setActiveNav('trash');
+    } else if (currentView === 'shared') {
+      if (activeNav !== 'shared') setActiveNav('shared');
     }
   }, [currentView, currentPath, activeNav, setActiveNav]);
 
@@ -38,6 +43,8 @@ export default function Sidebar() {
       setCurrentView('recent');
     } else if (id === 'trash') {
       setCurrentView('trash');
+    } else if (id === 'shared') {
+      setCurrentView('shared');
     }
   };
 
@@ -81,14 +88,21 @@ export default function Sidebar() {
 
       {/* Navigation Tabs */}
       <nav className="flex flex-col px-4 gap-2">
-        <NavLink id="my-files" label="My Files" icon="folder_open" filled />
-        <NavLink id="shared" label="Shared" icon="group" />
-        <NavLink id="recent" label="Recent" icon="schedule" />
-        <NavLink id="starred" label="Starred" icon="star" />
-        <NavLink id="trash" label="Recycle Bin" icon="delete" />
+        {!shareMode.active && <NavLink id="my-files" label="My Files" icon="folder_open" filled />}
+
+        {!shareMode.active && <NavLink id="recent" label="Recent" icon="schedule" />}
+        {!shareMode.active && <NavLink id="starred" label="Starred" icon="star" />}
+        {!shareMode.active && <NavLink id="trash" label="Recycle Bin" icon="delete" />}
+        {!shareMode.active && <NavLink id="shared" label="Shared" icon="group" />}
       </nav>
 
-      {/* Drives Tree View */}
+
+
+      {/* Shared Section — shows all shares with privileges, time, remove */}
+      {!shareMode.active && <SharedSidebarSection />}
+
+      {/* Drives Tree View - Hidden in share mode */}
+      {!shareMode.active && (
       <div className="mt-8 mb-4">
         <h3 className="text-outline-variant font-label-sm text-[11px] uppercase tracking-wider mb-2 px-8 font-semibold">Drives</h3>
         <div className="flex flex-col px-3">
@@ -102,9 +116,12 @@ export default function Sidebar() {
           ))}
         </div>
       </div>
+      )}
+
 
       <div className="mt-auto px-4">
-        {/* Storage Card */}
+        {/* Storage Card - Hidden in share mode */}
+        {!shareMode.active && (
         <div className="bg-white dark:bg-[#1c1c1f] rounded-3xl p-5 shadow-sm border border-surface-variant/30 dark:border-zinc-800/50 mb-4">
           <div className="text-[11px] font-bold text-on-surface-variant dark:text-zinc-500 uppercase tracking-wider mb-3">
             Storage
@@ -130,6 +147,7 @@ export default function Sidebar() {
             MANAGE STORAGE
           </button>
         </div>
+        )}
 
         {/* Footer Tabs */}
         <div className="flex flex-col gap-1 px-2">

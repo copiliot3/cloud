@@ -7,6 +7,7 @@ export const shareApi = {
   mkdir: (id, path, name) => api.post(`/share/mkdir/${encodeURIComponent(id)}`, { path, name }),
   delete: (id, paths) => api.post(`/share/delete/${encodeURIComponent(id)}`, { paths }),
   rename: (id, path, newName) => api.post(`/share/rename/${encodeURIComponent(id)}`, { path, newName }),
+  updatePermission: (id, permission) => api.post(`/share/update-permission/${encodeURIComponent(id)}`, { permission }),
   rawUrl: (id, path = '') => `/api/share/raw/${encodeURIComponent(id)}?path=${encodeURIComponent(path)}`,
   zipUrl: (id, path = '') => `/api/share/download-zip/${encodeURIComponent(id)}?path=${encodeURIComponent(path)}`,
   upload: (id, path, files, onProgress) => {

@@ -2,6 +2,7 @@ const fs = require('fs');
 const fsPromises = fs.promises;
 const path = require('path');
 const crypto = require('crypto');
+const recycleBinService = require('./recycleBinService');
 
 const SHARES_FILE = path.resolve(__dirname, '../shares.json');
 
@@ -19,6 +20,23 @@ function loadShares() {
 function saveShares(shares) {
   fs.writeFileSync(SHARES_FILE, JSON.stringify(shares, null, 2), 'utf8');
 }
+
+function recordShareActivity(shareId, actionDescription) {
+  try {
+    const shares = loadShares();
+    const idx = shares.findIndex(s => s.id === shareId);
+    if (idx !== -1) {
+      shares[idx].lastActivity = {
+        action: actionDescription,
+        timestamp: new Date().toISOString()
+      };
+      saveShares(shares);
+    }
+  } catch (err) {
+    console.error('[ShareService] Failed to record share activity:', err.message);
+  }
+}
+
 
 function isInside(parent, child) {
   const normalizedParent = path.resolve(parent).toLowerCase();
@@ -174,6 +192,7 @@ async function createDirectory(shareId, relativePath, name) {
     throw Object.assign(new Error('Folder name is invalid'), { status: 400 });
   }
   await safeMkdir(target, { recursive: false });
+  recordShareActivity(shareId, `Created folder "${name}"`);
   return { success: true, item: await itemMetadata(target, share.path) };
 }
 
@@ -191,11 +210,24 @@ async function deleteItems(shareId, relativePaths) {
       if (path.resolve(target) === path.resolve(share.path)) {
         throw Object.assign(new Error('Cannot delete the shared root'), { status: 400 });
       }
-      await fsPromises.rm(target, { recursive: true, force: false });
-      results.push({ relativePath, success: true });
+      
+      // Move to recycle bin instead of permanent deletion
+      // This ensures the data owner can recover files from the centralized Recycle Bin
+      const binResult = await recycleBinService.moveToBin(target);
+      results.push({ 
+        relativePath, 
+        success: true, 
+        trashed: true,
+        binId: binResult.id,
+        message: `Item moved to Recycle Bin (ID: ${binResult.id})` 
+      });
     } catch (err) {
       results.push({ relativePath, success: false, error: err.message });
     }
+  }
+  const successCount = results.filter(r => r.success).length;
+  if (successCount > 0) {
+    recordShareActivity(shareId, `Deleted ${successCount} item(s)`);
   }
   return { success: results.every(item => item.success), results };
 }
@@ -217,6 +249,7 @@ async function renameItem(shareId, relativePath, newName) {
   }
   const newPath = resolveSharedPath(share, path.join(path.dirname(sanitizeRelativePath(relativePath)), safeName));
   await fsPromises.rename(oldPath, newPath);
+  recordShareActivity(shareId, `Renamed "${path.basename(oldPath)}" to "${safeName}"`);
   return { success: true, item: await itemMetadata(newPath, share.path) };
 }
 
@@ -241,12 +274,75 @@ async function saveUploadedFiles(shareId, relativePath, files) {
     saved.push(await itemMetadata(target, share.path));
   }
 
+  if (saved.length > 0) {
+    recordShareActivity(shareId, `Uploaded ${saved.length} file(s)`);
+  }
+
   return { success: true, files: saved };
+}
+
+async function getAllShares() {
+  const shares = loadShares();
+  // Enrich each share with display info
+  const enriched = [];
+  for (const share of shares) {
+    try {
+      const stats = await fsPromises.stat(share.path);
+      enriched.push({
+        ...share,
+        exists: true,
+        name: path.basename(share.path),
+        displayName: path.basename(share.path),
+      });
+    } catch {
+      enriched.push({
+        ...share,
+        exists: false,
+        name: path.basename(share.path),
+        displayName: path.basename(share.path),
+      });
+    }
+  }
+  return enriched;
+}
+
+function deleteShare(shareId) {
+  const shares = loadShares();
+  const idx = shares.findIndex(s => s.id === shareId);
+  if (idx === -1) {
+    throw Object.assign(new Error('Share not found'), { status: 404 });
+  }
+  shares.splice(idx, 1);
+  saveShares(shares);
+  return { success: true };
+}
+
+function clearAllShares() {
+  saveShares([]);
+  return { success: true };
+}
+
+function updateSharePermission(shareId, permission) {
+  if (!['read', 'write'].includes(permission)) {
+    throw Object.assign(new Error('Permission must be read or write'), { status: 400 });
+  }
+  const shares = loadShares();
+  const idx = shares.findIndex(s => s.id === shareId);
+  if (idx === -1) {
+    throw Object.assign(new Error('Share link not found'), { status: 404 });
+  }
+  shares[idx].permission = permission;
+  saveShares(shares);
+  return shares[idx];
 }
 
 module.exports = {
   createShare,
   getShare,
+  getAllShares,
+  deleteShare,
+  clearAllShares,
+  updateSharePermission,
   listSharedDirectory,
   createDirectory,
   deleteItems,

@@ -39,7 +39,18 @@ export default function ContextMenu() {
 
   if (!contextMenu.visible) return null;
 
-  const { x, y, item } = contextMenu;
+  const { x, y, item, options = {} } = contextMenu;
+  const isShared = Boolean(options.isShared);
+  const canWrite = options.canWrite !== undefined ? options.canWrite : true;
+  const isReadOnly = isShared && !canWrite;
+  
+  // For Read-Only shared access, hide all modification and info actions
+  const showGetInfo = !isReadOnly && (options.showGetInfo !== undefined ? options.showGetInfo : true);
+  const showClipboardActions = !isShared;
+  const showShareAction = !isShared;
+  const showRenameAction = !isReadOnly && canWrite;
+  const showDeleteAction = !isReadOnly && canWrite;
+  const showFolderColorOptions = !isReadOnly && item.isDirectory;
 
   // Adjust position to stay within viewport
   const menuWidth = 240;
@@ -47,16 +58,56 @@ export default function ContextMenu() {
   const adjustedX = x + menuWidth > window.innerWidth ? x - menuWidth : x;
   const adjustedY = y + menuHeight > window.innerHeight ? y - menuHeight : y;
 
+  const openSharedDir = () => {
+    if (options.onOpen) return options.onOpen();
+    if (options.onNavigate) return options.onNavigate(item.relativePath || '');
+  };
+
+  const resolvePathsFromSelection = () => {
+    const key = options.itemKey || (isShared ? 'relativePath' : 'path');
+    const selected = [...(selectedItems || [])];
+    if (!selected.length) {
+      const single = item?.[key];
+      return single !== undefined ? [single] : [];
+    }
+
+    // Prefer selecting via stored key (relativePath for shared)
+    const mapByKey = selected
+      .map((p) => {
+        // In our shared UIs selectedItems already contains relativePath strings.
+        // So keep as-is.
+        return p;
+      })
+      .filter((p) => p !== undefined && p !== null);
+
+    return mapByKey.length ? mapByKey : [item?.[key]].filter(Boolean);
+  };
+
   const handleOpen = () => {
-    if (item.isDirectory) {
-      useFileStore.getState().navigateTo(item.path);
+    if (options.onOpen) {
+      options.onOpen();
+    } else if (item.isDirectory) {
+      if (isShared) openSharedDir();
+      else useFileStore.getState().navigateTo(item.path);
     } else {
-      window.open(`/api/files/download?path=${encodeURIComponent(item.path)}`, '_blank');
+      if (isShared) {
+        if (options.downloadUrl) window.open(options.downloadUrl, '_blank');
+        else window.open(`/api/share/raw/${encodeURIComponent(options.shareId || '')}?path=${encodeURIComponent(item.relativePath || '')}`, '_blank');
+      } else {
+        window.open(`/api/files/download?path=${encodeURIComponent(item.path)}`, '_blank');
+      }
     }
     hideContextMenu();
   };
 
+
   const handleDownload = () => {
+    if (options.downloadUrl) {
+      window.open(options.downloadUrl, '_blank');
+      hideContextMenu();
+      return;
+    }
+
     const paths = selectedItems.has(item.path) ? [...selectedItems] : [item.path];
     if (paths.length > 1) {
       window.open(fileApi.getMultiDownloadUrl(paths), '_blank');
@@ -86,6 +137,12 @@ export default function ContextMenu() {
   };
 
   const handleRename = () => {
+    if (options.onRename) {
+      options.onRename();
+      hideContextMenu();
+      return;
+    }
+
     showModal('rename', {
       name: item.name,
       onConfirm: async (newName) => {
@@ -102,13 +159,29 @@ export default function ContextMenu() {
   };
 
   const handleDelete = () => {
-    const paths = selectedItems.has(item.path) ? [...selectedItems] : [item.path];
+    if (options.onDelete) {
+      options.onDelete();
+      hideContextMenu();
+      return;
+    }
+
+    const key = options.itemKey || (isShared ? 'relativePath' : 'path');
+    const selected = [...(selectedItems || [])];
+
+    const hasSelected = selected.length > 0;
+    const paths = hasSelected
+      ? selected
+      : item?.[key] !== undefined
+        ? [item[key]]
+        : [];
+
     showModal('delete', {
       count: paths.length,
       onConfirm: () => deleteFiles(paths),
     });
     hideContextMenu();
   };
+
 
   const MenuItem = ({ label, shortcut, onClick, danger = false }) => (
     <button
@@ -135,11 +208,31 @@ export default function ContextMenu() {
         style={{ left: adjustedX, top: adjustedY }}
       >
         <MenuItem label="Open" onClick={handleOpen} shortcut="Ctrl O" />
-        <MenuItem label="Get Info" onClick={() => { showModal('properties', { item }); hideContextMenu(); }} shortcut="Ctrl I" />
+        {showGetInfo && (
+          <MenuItem
+            label="Get Info"
+            onClick={() => {
+              if (options.onGetInfo) options.onGetInfo();
+              else {
+                showModal('properties', { item });
+                hideContextMenu();
+              }
+            }}
+            shortcut="Ctrl I"
+          />
+        )}
         <MenuItem label="Download" onClick={handleDownload} />
-        <MenuItem label="Share" onClick={() => { showModal('share', { item }); hideContextMenu(); }} />
-        <MenuItem 
-          label={item.isStarred ? '★ Unstar' : '☆ Star'} 
+        {showShareAction && (
+          <MenuItem
+            label="Share"
+            onClick={() => {
+              showModal('share', { item });
+              hideContextMenu();
+            }}
+          />
+        )}
+        <MenuItem
+          label={item.isStarred ? '★ Unstar' : '☆ Star'}
           onClick={async () => {
             const res = await useFileStore.getState().toggleStar(item);
             if (res.success) {
@@ -148,21 +241,26 @@ export default function ContextMenu() {
               addToast(res.error || 'Failed to update star', 'error');
             }
             hideContextMenu();
-          }} 
+          }}
         />
         
-        <Divider />
+        {showClipboardActions && (
+          <>
+            <Divider />
+            <MenuItem label="Cut" onClick={handleCut} shortcut="Ctrl X" />
+            <MenuItem label="Copy" onClick={handleCopy} shortcut="Ctrl C" />
+            <MenuItem label="Paste" onClick={handlePaste} shortcut="Ctrl V" />
+          </>
+        )}
+        {showRenameAction && (
+          <>
+            <Divider />
+            <MenuItem label="Rename" onClick={handleRename} shortcut="F2" />
+            <MenuItem label="Move to..." onClick={handleCut} />
+          </>
+        )}
         
-        <MenuItem label="Cut" onClick={handleCut} shortcut="Ctrl X" />
-        <MenuItem label="Copy" onClick={handleCopy} shortcut="Ctrl C" />
-        <MenuItem label="Paste" onClick={handlePaste} shortcut="Ctrl V" />
-        
-        <Divider />
-        
-        <MenuItem label="Rename" onClick={handleRename} shortcut="F2" />
-        <MenuItem label="Move to..." onClick={handleCut} />
-        
-        {item.isDirectory && (
+        {item.isDirectory && showFolderColorOptions && (
           <>
             <Divider />
             <div className="px-3 py-1 text-[10px] font-bold text-black/30 dark:text-zinc-500 uppercase tracking-wider">Folder Color</div>
@@ -187,9 +285,12 @@ export default function ContextMenu() {
           </>
         )}
 
-        <Divider />
-        
-        <MenuItem label="Delete" onClick={handleDelete} danger shortcut="Del" />
+        {showDeleteAction && (
+          <>
+            <Divider />
+            <MenuItem label="Delete" onClick={handleDelete} danger shortcut="Del" />
+          </>
+        )}
       </div>
     </div>
   );

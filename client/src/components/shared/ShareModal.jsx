@@ -7,6 +7,7 @@ export default function ShareModal() {
   const [permission, setPermission] = useState('read');
   const [loading, setLoading] = useState(false);
   const [link, setLink] = useState('');
+  const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
 
   const item = modal.data?.item;
@@ -18,6 +19,7 @@ export default function ShareModal() {
     if (!visible) return;
     setPermission('read');
     setLink('');
+    setError(null);
     setCopied(false);
   }, [visible, item?.path]);
 
@@ -28,9 +30,13 @@ export default function ShareModal() {
     const generate = async () => {
       setLoading(true);
       setCopied(false);
+      setError(null);
       try {
         const result = await shareApi.create(item.path, permission);
         if (cancelled) return;
+        if (!result.link) {
+          throw new Error('No share link returned from server');
+        }
         setLink(result.link);
         try {
           await navigator.clipboard.writeText(result.link);
@@ -39,7 +45,10 @@ export default function ShareModal() {
           setCopied(false);
         }
       } catch (err) {
-        if (!cancelled) addToast(err.message, 'error');
+        if (!cancelled) {
+          setError(err.message || 'Unable to generate share link');
+          addToast(err.message || 'Unable to generate share link', 'error');
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -104,24 +113,31 @@ export default function ShareModal() {
           </button>
         </div>
 
-        <div className="mt-5 rounded-2xl bg-white/70 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 p-3 flex items-center gap-3">
-          <span className={`material-symbols-outlined text-[22px] ${loading ? 'animate-spin' : ''}`} style={{ color: accentColor }}>
-            {loading ? 'progress_activity' : 'link'}
-          </span>
-          <input
-            readOnly
-            value={loading ? 'Generating link...' : link}
-            className="min-w-0 flex-1 bg-transparent outline-none text-[13px] font-medium text-on-surface dark:text-zinc-200"
-          />
-          <button
-            onClick={copyLink}
-            disabled={!link || loading}
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-white disabled:opacity-40 transition-all active:scale-95"
-            style={{ backgroundColor: accentColor }}
-            title="Copy link"
-          >
-            <span className="material-symbols-outlined text-[19px]">{copied ? 'check' : 'content_copy'}</span>
-          </button>
+        <div className="mt-5 rounded-2xl bg-white/70 dark:bg-zinc-950/40 border border-black/10 dark:border-white/10 p-3 flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+            <span className={`material-symbols-outlined text-[22px] ${loading ? 'animate-spin' : ''}`} style={{ color: accentColor }}>
+              {loading ? 'progress_activity' : 'link'}
+            </span>
+            <input
+              readOnly
+              value={loading ? 'Generating link...' : link}
+              className="min-w-0 flex-1 bg-transparent outline-none text-[13px] font-medium text-on-surface dark:text-zinc-200"
+            />
+            <button
+              onClick={copyLink}
+              disabled={!link || loading}
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-white disabled:opacity-40 transition-all active:scale-95"
+              style={{ backgroundColor: accentColor }}
+              title="Copy link"
+            >
+              <span className="material-symbols-outlined text-[19px]">{copied ? 'check' : 'content_copy'}</span>
+            </button>
+          </div>
+          {error && (
+            <div className="text-sm text-error font-medium px-2 py-1 rounded-lg bg-red-50 dark:bg-red-950/20">
+              {error}
+            </div>
+          )}
         </div>
       </div>
     </div>
